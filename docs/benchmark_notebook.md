@@ -27,8 +27,8 @@ Comando: `taskset -c 0-3 python scripts/benchmark.py --threads 1 2 4 --images sa
 | factory1910.jpg | 2 | 6 | 6.09 | 36.81 | 48.22 | 0.4 | 43.39 | 54.58 | 23.0 |
 | factory1910.jpg | 4 | 6 | 6.52 | 28.86 | 34.13 | 0.45 | 36.14 | 42.12 | 27.7 |
 
-Leitura: a inferência domina o tempo (cerca de 80% do total). Passar de 1 para 4 threads reduz a
-latência total em cerca de 2,2x (não 4x, porque nem todo operador paraleliza). O pós-processamento
+Leitura: a inferência domina o tempo (80% a 90% do total). Passar de 1 para 4 threads reduz a
+latência total em cerca de 2x (não 4x, porque nem todo operador paraleliza). O pós-processamento
 (decodificação e NMS) é desprezível, abaixo de 1 ms.
 
 ## Ponta a ponta pela API (container `amd64`, `--cpus 4`, `ORT_INTRA_THREADS=4`, imagem 1280x1023)
