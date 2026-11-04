@@ -1,0 +1,25 @@
+# Uso:  docker compose up --build        (sobe a API em http://localhost:8000/docs)
+# O build abaixo gera as duas arquiteturas; veja scripts/build_multiarch.sh para publicar o manifesto.
+services:
+  edge-risk-zone:
+    image: edge-risk-zone:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    container_name: edge-risk-zone
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      CONF_THRESHOLD: "0.35"
+      NMS_IOU: "0.45"
+      ORT_INTRA_THREADS: "0"   # 0 = padrão; na Raspberry Pi 5 teste 4 (número de núcleos)
+      MAX_UPLOAD_MB: "10"
+    volumes:
+      - ./config:/srv/config:ro   # troque a zona sem reconstruir a imagem
+    read_only: true
+    tmpfs:
+      - /tmp
