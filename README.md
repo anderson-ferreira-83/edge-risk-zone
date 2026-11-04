@@ -53,7 +53,8 @@ Para conferir a integridade: `scripts/download_model.sh`.
 | Variável | Padrão | Função |
 |---|---|---|
 | `CONF_THRESHOLD` | `0.35` | Confiança mínima para aceitar uma detecção |
-| `NMS_IOU` | `0.45` | IoU acima do qual caixas sobrepostas são fundidas |
+| `NMS_IOU` | `0.45` | IoU acima do qual a caixa de menor confiança é suprimida (NMS) |
+| `MAX_CONCURRENT_INFERENCES` | `1` | Inferências simultâneas; as demais esperam na fila, em vez de disputar os núcleos |
 | `ORT_INTRA_THREADS` | `0` | Threads do ONNX Runtime (0 = padrão; na Pi 5, teste `4`) |
 | `ZONE_PATH` | `config/zone.json` | Zona padrão (montada como volume no Compose) |
 | `MAX_UPLOAD_MB` | `10` | Tamanho máximo do upload (acima disso: HTTP 413) |
@@ -176,7 +177,7 @@ O `docker-compose.yml` usa `restart: always`, executa o container com sistema de
 |---|---|
 | Build `linux/amd64` e `linux/arm64` em notebook x86_64 | OK (`docker buildx`, manifesto com as duas arquiteturas) |
 | Binários da imagem arm64 são AArch64 | OK: `scripts/verify_arch.py` leu o cabeçalho ELF do Python e de 52 bibliotecas `.so` (inclusive ONNX Runtime, NumPy, Pydantic e Pillow) |
-| Container amd64: endpoints, healthcheck, usuário não root, somente leitura | OK |
+| Container amd64: endpoints, healthcheck, usuário não root, somente leitura | OK (`docs/evidence/multiarch_build.txt` guarda o log do build e os IDs das imagens) |
 | **Execução da imagem arm64** (emulada ou na placa) | **Não verificada.** `scripts/arm64_smoke_test.sh` faz o teste emulado; a validação na Pi 5 está descrita abaixo |
 
 ## Adaptações para a Raspberry Pi 5
@@ -187,7 +188,7 @@ Diferenças esperadas em relação ao ambiente de desenvolvimento e o que cada u
 |---|---|---|---|
 | Arquitetura | x86_64 | ARM64 (AArch64), 4 núcleos Cortex-A76 | Imagem `linux/arm64` (já gerada); wheels `aarch64` das dependências |
 | Aceleração | CPU | Sem NPU integrada; a GPU VideoCore não é usada pelo ONNX Runtime. Existem aceleradores opcionais (kits com Hailo), que este projeto **não** usa | Inferência 100% em CPU; `ORT_INTRA_THREADS=4` |
-| Desempenho | 28 a 35 ms (4 núcleos) | Esperado maior; **medir** | Reduzir resolução (320) ou trocar para YOLOX-Nano se passar da meta |
+| Desempenho | 28 a 35 ms (4 núcleos) | Esperado maior; **medir** | Trocar para YOLOX-Nano ou reexportar o modelo em resolução menor, se passar da meta |
 | Memória | ~127 MiB no container | Cabe com folga | Manter um processo e um worker |
 | Térmica | Sem restrições | Pode reduzir a frequência sob carga contínua | Dissipador/ventilação; monitorar `vcgencmd measure_temp` e `vcgencmd get_throttled` |
 | Entrada | Upload de arquivo | Câmera (CSI/USB) | Não incluído: um laço de captura (Picamera2/V4L2) chamaria a mesma função `detect` |
@@ -195,7 +196,7 @@ Diferenças esperadas em relação ao ambiente de desenvolvimento e o que cada u
 
 **Otimizações de inferência** (não aplicadas nesta versão; é onde o ganho está):
 
-- **Resolução de entrada:** o custo cai aproximadamente com o quadrado do lado. Passar de 416 para 320 reduz o trabalho em cerca de 40% (estimativa por área, a confirmar), com perda para pessoas pequenas.
+- **Resolução de entrada:** o custo cai aproximadamente com o quadrado do lado; 320 em vez de 416 reduziria o trabalho em cerca de 40% (estimativa por área, a confirmar), com perda para pessoas pequenas. **O ONNX versionado tem entrada fixa 416×416**: testar 320 exige exportar outro modelo (o repositório do YOLOX tem script de exportação). `INPUT_SIZE` diferente de 416 com este arquivo falha na inicialização, com mensagem explícita.
 - **Quantização INT8** (estática, com dados de calibração da própria câmera, por exemplo com `onnxruntime.quantization.quantize_static`): costuma reduzir tamanho e latência em CPU, mas o ganho depende de o runtime ter kernels INT8 para a CPU e pode custar precisão; exige reavaliar. **FP16** não acelera necessariamente na CPU da Pi: serve mais para reduzir tamanho.
 - **Threads e afinidade:** testar 2 e 4 threads; com mais de um processo, fixar núcleos.
 - **Formatos e runtimes:** ONNX é formato de intercâmbio, não aceleração por si. Em ARM, alternativas são TFLite (XNNPACK) e NCNN; o OpenVINO é voltado principalmente a hardware Intel.
@@ -203,7 +204,7 @@ Diferenças esperadas em relação ao ambiente de desenvolvimento e o que cada u
 
 ### Meta de latência (hipótese a validar)
 
-Uma pessoa caminhando anda cerca de 1,2 a 1,5 m/s. Com latência total de 250 ms, ela se desloca de 0,3 a 0,4 m entre a captura e o alerta.
+Uma pessoa caminhando anda cerca de 1,2 a 1,5 m/s. Com latência total de 250 ms, ela se desloca de 0,3 a 0,4 m entre a captura e o alerta. A faixa amarela é definida em pixels (fração da diagonal), então **não equivale a uma distância em metros** sem calibrar a câmera (homografia ou uma medida de referência na cena): essa conversão faz parte da instalação.
 Por isso adoto como meta **latência de ponta a ponta de até 250 ms por quadro (4 FPS ou mais)** e uma faixa amarela de pelo menos
 esse deslocamento. É uma hipótese de engenharia, não uma norma: o valor correto depende do risco da máquina e deve vir de uma análise de risco.
 
@@ -212,7 +213,7 @@ esse deslocamento. É uma hipótese de engenharia, não uma norma: o valor corre
 1. `docker pull` do manifesto publicado (ou `docker build` na própria Pi) e `docker run --rm IMAGEM python -c "import platform; print(platform.machine())"` deve imprimir `aarch64`.
 2. `docker compose up -d` e `curl` nos dois endpoints com as imagens de `samples/`.
 3. Dentro do container ou no host: `python scripts/benchmark.py --threads 1 2 4` e registrar p50/p95 em `docs/`.
-4. Repetir com resolução 320 e, se necessário, com o YOLOX-Nano.
+4. Se passar da meta, repetir com o YOLOX-Nano (ou com um ONNX reexportado em resolução menor).
 5. Durante 10 minutos de carga contínua, registrar temperatura e `get_throttled` (valor diferente de `0x0` indica limitação de energia ou temperatura).
 6. Conferir com imagens da câmera real, na posição de instalação, se pessoas na zona são detectadas e ajustar polígono e limiar.
 7. Critério de aceite: p95 de ponta a ponta dentro da meta acima, sem estrangulamento térmico, e nenhuma pessoa visível dentro da zona sem detecção no conjunto de teste.
@@ -227,7 +228,7 @@ Detalhes e método em [`docs/benchmark_notebook.md`](docs/benchmark_notebook.md)
 | 2 | 37 a 40 ms | 43 a 47 ms | 55 a 60 ms |
 | 4 | 28 a 29 ms | 35 a 36 ms | 41 a 42 ms |
 
-Pela API, em container com 4 CPUs: `/detect` com mediana de cerca de 52 ms e `/detect/image` com cerca de 172 ms (o PNG custa mais que a inferência; por isso usa compressão nível 1).
+Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detect` com mediana de 50 ms (p95 66 ms) e `/detect/image` com mediana de 170 ms (p95 185 ms); memória do container de cerca de 129 MiB. O PNG anotado custa mais que a inferência: só codificar a imagem leva 294 ms no nível 6 do zlib (padrão do Pillow) e 92 ms no nível 1, usado aqui com arquivo de tamanho parecido (1,39 contra 1,41 MB).
 
 ## Limitações
 
@@ -256,7 +257,7 @@ Pela API, em container com 4 CPUs: `/detect` com mediana de cerca de 52 ms e `/d
 ## Testes, estrutura e licenças
 
 ```bash
-pip install -r requirements-dev.txt && pytest        # 39 testes: geometria, detector, regra de risco e API
+pip install -r requirements-dev.txt && pytest        # 49 testes: geometria, detector, regra de risco e API
 ```
 
 ```
@@ -265,7 +266,7 @@ config/      zone.json (zona padrão, editável sem reconstruir a imagem)
 models/      yolox_tiny.onnx + origem, checksum e licença
 samples/     fotos de demonstração (domínio público) e créditos
 scripts/     benchmark, build multi-arquitetura, verificação ELF, teste arm64 emulado, download do modelo
-tests/       39 testes (pytest)
+tests/       49 testes (pytest), incluindo regressões de recorte de caixas, limites de upload e concorrência
 docs/        benchmark e imagens
 ```
 

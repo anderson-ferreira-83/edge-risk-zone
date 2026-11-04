@@ -11,7 +11,8 @@ from .risk import PersonRisk
 
 COLORS = {"green": (34, 160, 80), "yellow": (240, 190, 0), "red": (210, 40, 40)}
 LABELS_PT = {"green": "VERDE", "yellow": "AMARELO", "red": "VERMELHO"}
-# Nível 1 do zlib: ~3x mais rápido que o padrão (6) com arquivo de tamanho quase igual.
+# Nível 1 do zlib: codificar leva ~92 ms contra ~294 ms no nível padrão (6), com arquivo de tamanho parecido
+# (docs/benchmark_api_container.json).
 # Em CPU embarcada, a compressão do PNG pesa mais que a inferência do modelo.
 PNG_COMPRESS_LEVEL = 1
 

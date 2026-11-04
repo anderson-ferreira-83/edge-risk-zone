@@ -33,13 +33,22 @@ latência total em cerca de 2x (não 4x, porque nem todo operador paraleliza). O
 
 ## Ponta a ponta pela API (container `amd64`, `--cpus 4`, `ORT_INTRA_THREADS=4`, imagem 1280x1023)
 
+Dados brutos: `benchmark_api_container.json` (gerado por `scripts/benchmark_api.py`).
+
 | Endpoint | p50 | p95 |
 |---|---:|---:|
-| `POST /detect` (JSON) | 52,4 ms | 70,4 ms |
-| `POST /detect/image` (PNG anotado) | 172,1 ms | 192,9 ms |
+| `POST /detect` (JSON) | 50,1 ms | 66,4 ms |
+| `POST /detect/image` (PNG anotado) | 170,0 ms | 185,2 ms |
 
-Memória do container em repouso após as requisições: cerca de 127 MiB.
+Memória do container após as requisições: 129,2 MiB.
 
-O PNG anotado custa mais do que a inferência. Com o nível de compressão padrão do zlib (6), o
-endpoint levava 377 ms (p50); no nível 1 caiu para 172 ms com arquivo de tamanho quase igual
-(1,39 MB contra 1,41 MB). O JSON não paga esse custo, e é o endpoint a usar em tempo real.
+O PNG anotado custa mais que a inferência. Só codificar a imagem, por nível de compressão do zlib:
+
+| Nível | Tempo de codificação | Tamanho |
+|---:|---:|---:|
+| 1 (usado) | 92 ms | 1,39 MB |
+| 3 | 123 ms | 1,23 MB |
+| 6 (padrão do Pillow) | 294 ms | 1,41 MB |
+| 9 | 1078 ms | 1,26 MB |
+
+O JSON não paga esse custo e é o endpoint a usar em tempo real. Uma medição anterior, feita à mão, deu 377 ms para `/detect/image` no nível 6; não está nos dados brutos e fica apenas como indício.

@@ -1,0 +1,16 @@
+# Evidência do build multi-arquitetura (gerada em 2026-11-04T18:30Z)
+# Comando: scripts/build_multiarch.sh
+# Host: x86_64, Docker 29.8.1
+# Commit: aa372cd
+
+linux/amd64 -> linux/amd64
+edge-risk-zone:multi (linux/amd64): python3.12=x86-64; bibliotecas .so={'x86-64': 53}
+OK: todos os binários são x86-64
+linux/arm64 -> linux/arm64
+edge-risk-zone:multi (linux/arm64): python3.12=AArch64; bibliotecas .so={'AArch64': 52}
+OK: todos os binários são AArch64
+
+linux/amd64  id=sha256:a9c180040b6b2df8880046143a5323eb6a8678b085db1ca2965df2ccffb355f8  os/arch=linux/amd64
+linux/arm64  id=sha256:2a2094431eec53328fa424959271232831a52f54258728edce5a6538c31a0ad8  os/arch=linux/arm64
+
+# NÃO provado por este arquivo: execução da imagem arm64 (QEMU ou Raspberry Pi 5).

@@ -1,0 +1,41 @@
+{
+  "url": "http://127.0.0.1:18001",
+  "image": "samples/airplane.jpg",
+  "detect": {
+    "p50_ms": 50.1,
+    "p95_ms": 66.4,
+    "mean_ms": 51.7,
+    "runs": 60,
+    "response_bytes": 1529
+  },
+  "detect_image": {
+    "p50_ms": 170.0,
+    "p95_ms": 185.2,
+    "mean_ms": 171.5,
+    "runs": 60,
+    "response_bytes": 1372377
+  },
+  "png_encoding_by_level": [
+    {
+      "compress_level": 1,
+      "encode_ms": 92.0,
+      "bytes": 1386238
+    },
+    {
+      "compress_level": 3,
+      "encode_ms": 123.4,
+      "bytes": 1229705
+    },
+    {
+      "compress_level": 6,
+      "encode_ms": 294.2,
+      "bytes": 1411879
+    },
+    {
+      "compress_level": 9,
+      "encode_ms": 1077.7,
+      "bytes": 1263087
+    }
+  ],
+  "container_memory": "129.2MiB / 7.714GiB"
+}
