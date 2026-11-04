@@ -1,0 +1,174 @@
+"""API FastAPI: detecção de pessoas em zona de risco (JSON e PNG anotado)."""
+from __future__ import annotations
+
+import io
+import json
+import logging
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+
+from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from PIL import Image, ImageOps, UnidentifiedImageError
+from pydantic import ValidationError
+
+from . import __version__
+from .config import Settings, get_settings
+from .detector import DetectionResult, PersonDetector
+from .geometry import to_pixels
+from .render import render_annotated_png
+from .risk import PersonRisk, classify_person, margin_in_pixels, overall_level
+from .schemas import (Alert, BoundingBox, DetectResponse, HealthResponse, Metadata, PersonOut,
+                      Summary, TimingsOut, ZoneConfig)
+
+logger = logging.getLogger("edge_risk_zone")
+ALERT_MESSAGES = {
+    "green": "Nenhuma pessoa na zona de risco.",
+    "yellow": "Atenção: pessoa próxima da zona de risco.",
+    "red": "ALERTA: pessoa dentro da zona de risco.",
+}
+
+
+@dataclass
+class Analysis:
+    image: Image.Image
+    result: DetectionResult
+    risks: list[PersonRisk]
+    level: str
+    zone: ZoneConfig
+    polygon_px: list[tuple[float, float]]
+    margin_px: float
+    conf: float
+
+
+def load_zone(path) -> ZoneConfig:
+    """Lê a zona padrão de um arquivo JSON e valida."""
+    with open(path, encoding="utf-8") as handle:
+        return ZoneConfig(**json.load(handle))
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings: Settings = get_settings()
+    app.state.settings = settings
+    app.state.detector = PersonDetector(
+        settings.model_path, settings.input_size, settings.intra_op_threads,
+        settings.conf_threshold, settings.nms_iou)
+    app.state.default_zone = load_zone(settings.zone_path)
+    # aquecimento: a primeira inferência costuma ser mais lenta (alocação e cache)
+    app.state.detector.detect(Image.new("RGB", (settings.input_size, settings.input_size)))
+    logger.info("Modelo %s carregado", app.state.detector.model_name)
+    yield
+
+
+app = FastAPI(
+    title="Edge Risk Zone",
+    version=__version__,
+    description=("Detecta pessoas com YOLOX-Tiny (ONNX Runtime, CPU) e classifica o risco em relação a uma "
+                 "zona poligonal. Protótipo educacional: não substitui sistemas de segurança certificados."),
+    lifespan=lifespan,
+)
+
+
+def _read_image(upload: UploadFile, settings: Settings) -> Image.Image:
+    data = upload.file.read(settings.max_upload_bytes + 1)
+    if len(data) > settings.max_upload_bytes:
+        raise HTTPException(413, f"Arquivo maior que {settings.max_upload_mb} MB")
+    if not data:
+        raise HTTPException(400, "Arquivo vazio")
+    try:
+        probe = Image.open(io.BytesIO(data))
+        if probe.width * probe.height > settings.max_image_pixels:
+            raise HTTPException(413, "Imagem com resolução acima do limite")
+        image = ImageOps.exif_transpose(Image.open(io.BytesIO(data)))
+        return image.convert("RGB")
+    except (UnidentifiedImageError, OSError) as exc:
+        raise HTTPException(400, "O arquivo enviado não é uma imagem válida") from exc
+
+
+def _parse_zone(raw: str | None, default: ZoneConfig) -> ZoneConfig:
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return ZoneConfig(**json.loads(raw))
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(422, "Campo 'zone' deve ser um JSON com 'polygon' e opcionalmente 'margin'") from exc
+    except ValidationError as exc:
+        message = "; ".join(err["msg"] for err in exc.errors())
+        raise HTTPException(422, f"Zona inválida: {message}") from exc
+
+
+def _analyze(request: Request, upload: UploadFile, zone_raw: str | None, conf: float | None) -> Analysis:
+    state = request.app.state
+    if conf is not None and not 0.0 < conf < 1.0:
+        raise HTTPException(422, "O parâmetro 'conf' deve estar entre 0 e 1 (exclusive)")
+    image = _read_image(upload, state.settings)
+    zone = _parse_zone(zone_raw, state.default_zone)
+    effective_conf = state.settings.conf_threshold if conf is None else conf
+    result = state.detector.detect(image, effective_conf)
+    polygon_px = to_pixels(zone.polygon, image.width, image.height)
+    margin_px = margin_in_pixels(zone.margin, image.width, image.height)
+    risks = [classify_person(d, polygon_px, margin_px) for d in result.detections]
+    return Analysis(image, result, risks, overall_level(risks), zone, polygon_px, margin_px, effective_conf)
+
+
+@app.get("/health", response_model=HealthResponse, tags=["serviço"])
+def health(request: Request) -> HealthResponse:
+    """Verificação de saúde, usada também pelo healthcheck do Docker."""
+    detector: PersonDetector = request.app.state.detector
+    return HealthResponse(status="ok", model=detector.model_name, input_size=detector.input_size,
+                          providers=detector.session.get_providers(), version=__version__)
+
+
+@app.get("/zone", response_model=ZoneConfig, tags=["serviço"])
+def default_zone(request: Request) -> ZoneConfig:
+    """Zona de risco padrão carregada de `config/zone.json`."""
+    return request.app.state.default_zone
+
+
+@app.post("/detect", response_model=DetectResponse, tags=["inferência"])
+def detect(
+    request: Request,
+    file: UploadFile = File(..., description="Imagem JPEG ou PNG"),
+    zone: str | None = Form(None, description='JSON opcional: {"polygon": [[x, y], ...], "margin": 0.05}'),
+    conf: float | None = Form(None, description="Limiar de confiança (padrão: variável CONF_THRESHOLD)"),
+) -> DetectResponse:
+    """Detecta pessoas e devolve JSON com caixas, confiança, distância à zona e nível de risco."""
+    a = _analyze(request, file, zone, conf)
+    persons = [
+        PersonOut(
+            id=i, confidence=round(r.detection.score, 4),
+            bbox=BoundingBox(x1=round(r.detection.x1, 1), y1=round(r.detection.y1, 1),
+                             x2=round(r.detection.x2, 1), y2=round(r.detection.y2, 1)),
+            foot_point=(round(r.foot_point[0], 1), round(r.foot_point[1], 1)),
+            distance_to_zone_px=round(r.distance_px, 1), risk_level=r.level)
+        for i, r in enumerate(a.risks, start=1)
+    ]
+    counts = {lvl: sum(1 for r in a.risks if r.level == lvl) for lvl in ("green", "yellow", "red")}
+    t = a.result.timings
+    return DetectResponse(
+        risk_level=a.level,
+        alert=Alert(active=a.level != "green", level=a.level, message=ALERT_MESSAGES[a.level]),
+        summary=Summary(persons_total=len(a.risks), **counts),
+        persons=persons,
+        metadata=Metadata(
+            model=request.app.state.detector.model_name, input_size=request.app.state.detector.input_size,
+            image_width=a.image.width, image_height=a.image.height, conf_threshold=a.conf,
+            margin_px=round(a.margin_px, 1), zone=a.zone,
+            timings=TimingsOut(preprocess_ms=round(t.preprocess_ms, 2), inference_ms=round(t.inference_ms, 2),
+                               postprocess_ms=round(t.postprocess_ms, 2), total_ms=round(t.total_ms, 2))),
+    )
+
+
+@app.post("/detect/image", responses={200: {"content": {"image/png": {}}}}, tags=["inferência"])
+def detect_image(
+    request: Request,
+    file: UploadFile = File(..., description="Imagem JPEG ou PNG"),
+    zone: str | None = Form(None, description='JSON opcional: {"polygon": [[x, y], ...], "margin": 0.05}'),
+    conf: float | None = Form(None, description="Limiar de confiança"),
+) -> Response:
+    """Devolve um PNG anotado com a zona, as caixas, os rótulos e o nível de risco."""
+    a = _analyze(request, file, zone, conf)
+    png = render_annotated_png(a.image, a.risks, a.polygon_px, a.margin_px, a.level)
+    return Response(content=png, media_type="image/png", headers={
+        "X-Risk-Level": a.level, "X-Persons": str(len(a.risks)),
+        "X-Inference-Ms": f"{a.result.timings.inference_ms:.1f}"})
