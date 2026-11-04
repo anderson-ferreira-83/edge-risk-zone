@@ -1,0 +1,15 @@
+.git
+.gitignore
+.pytest_cache
+__pycache__
+*.pyc
+.venv
+venv
+tests
+docs
+scripts
+samples
+bench-output
+build-output
+*.tar
+README.md
