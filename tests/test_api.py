@@ -105,3 +105,29 @@ def test_oversize_upload_is_413(monkeypatch):
     with TestClient(main.app) as small:
         big = b"\xff" * (1024 * 1024 + 10)
         assert small.post("/detect", files={"file": ("big.jpg", big, "image/jpeg")}).status_code == 413
+
+
+def _png(width, height):
+    buffer = io.BytesIO()
+    Image.new("RGB", (width, height), (128, 128, 128)).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def test_image_above_pixel_limit_is_413(monkeypatch):
+    monkeypatch.setattr(main, "get_settings", lambda: Settings(max_image_pixels=1000))
+    with TestClient(main.app) as small:
+        assert small.post("/detect", files={"file": ("a.png", _png(100, 100), "image/png")}).status_code == 413
+
+
+def test_pillow_decompression_bomb_is_413_not_500(client, monkeypatch):
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 100)  # o Pillow recusa acima do dobro (200 px)
+    response = client.post("/detect", files={"file": ("a.png", _png(100, 100), "image/png")})
+    assert response.status_code == 413
+
+
+def test_declared_body_above_limit_is_rejected_before_reading(monkeypatch):
+    monkeypatch.setattr(main, "get_settings", lambda: Settings(max_upload_mb=1))
+    with TestClient(main.app) as small:
+        response = small.post("/detect", files={"file": ("big.jpg", b"\xff" * (2 * 1024 * 1024), "image/jpeg")})
+        assert response.status_code == 413
+        assert "Corpo da requisição" in response.json()["detail"]

@@ -10,6 +10,7 @@ NumPy e Pillow bastam: sem OpenCV, o que simplifica a imagem ARM64.
 """
 from __future__ import annotations
 
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -73,6 +74,21 @@ def letterbox(image: Image.Image, size: int) -> tuple[np.ndarray, float]:
     return canvas[:, :, ::-1], ratio  # RGB -> BGR, ordem usada no treino do modelo
 
 
+def scale_and_clip(box: np.ndarray, ratio: float, width: int, height: int, score: float,
+                   min_side: float = 1.0) -> Detection | None:
+    """Volta a caixa à escala da imagem original e recorta cada coordenada aos limites.
+
+    Devolve None quando a caixa fica sem área útil (por exemplo, quando estava inteira na
+    região de preenchimento do letterbox), o que evita um retângulo invertido no desenho.
+    """
+    x1, y1, x2, y2 = (float(v) / ratio for v in box)
+    x1, x2 = (min(max(v, 0.0), float(width)) for v in (x1, x2))
+    y1, y2 = (min(max(v, 0.0), float(height)) for v in (y1, y2))
+    if x2 - x1 < min_side or y2 - y1 < min_side:
+        return None
+    return Detection(x1=x1, y1=y1, x2=x2, y2=y2, score=float(score))
+
+
 def build_grids(size: int) -> tuple[np.ndarray, np.ndarray]:
     """Grades de células e strides para as três escalas da cabeça do YOLOX."""
     grids, strides = [], []
@@ -127,14 +143,23 @@ class PersonDetector:
     """Carrega o modelo ONNX uma única vez e detecta pessoas em imagens PIL."""
 
     def __init__(self, model_path: Path, input_size: int = 416, intra_op_threads: int = 0,
-                 conf_threshold: float = 0.35, nms_iou: float = 0.45) -> None:
+                 conf_threshold: float = 0.35, nms_iou: float = 0.45, max_concurrent: int = 1) -> None:
         if not Path(model_path).is_file():
             raise FileNotFoundError(f"Modelo ONNX não encontrado: {model_path}")
         options = ort.SessionOptions()
         if intra_op_threads > 0:
             options.intra_op_num_threads = intra_op_threads
         self.session = ort.InferenceSession(str(model_path), options, providers=["CPUExecutionProvider"])
-        self.input_name = self.session.get_inputs()[0].name
+        model_input = self.session.get_inputs()[0]
+        self.input_name = model_input.name
+        fixed = [d for d in model_input.shape[2:] if isinstance(d, int)]
+        if fixed and any(d != input_size for d in fixed):
+            raise ValueError(
+                f"INPUT_SIZE={input_size}, mas o modelo exige entrada {model_input.shape}. "
+                "Para outra resolução é preciso exportar outro ONNX.")
+        # Limita as inferências simultâneas: várias ao mesmo tempo disputariam os núcleos da CPU
+        # (na Raspberry Pi 5, 4) e piorariam a latência de todas.
+        self._slots = threading.BoundedSemaphore(max(1, max_concurrent))
         self.input_size = input_size
         self.conf_threshold = conf_threshold
         self.nms_iou = nms_iou
@@ -144,28 +169,22 @@ class PersonDetector:
     def detect(self, image: Image.Image, conf_threshold: float | None = None) -> DetectionResult:
         """Executa o pipeline completo e devolve detecções e tempos."""
         conf = self.conf_threshold if conf_threshold is None else conf_threshold
-        timings = Timings()
 
         t0 = time.perf_counter()
         padded, ratio = letterbox(image, self.input_size)
         blob = np.ascontiguousarray(padded.transpose(2, 0, 1)[None], dtype=np.float32)  # NCHW
-        t1 = time.perf_counter()
-        raw = self.session.run(None, {self.input_name: blob})[0][0]
-        t2 = time.perf_counter()
+        with self._slots:
+            t1 = time.perf_counter()  # a espera na fila não conta como tempo de inferência
+            raw = self.session.run(None, {self.input_name: blob})[0][0]
+            t2 = time.perf_counter()
 
         boxes, scores = decode_person_boxes(raw, self._grids, self._strides, conf)
         keep = nms(boxes, scores, self.nms_iou)
         width, height = image.size
-        detections = []
-        for i in keep:
-            x1, y1, x2, y2 = (boxes[i] / ratio).tolist()  # volta à escala original
-            detections.append(Detection(
-                x1=max(0.0, x1), y1=max(0.0, y1), x2=min(float(width), x2), y2=min(float(height), y2),
-                score=float(scores[i]),
-            ))
+        detections = [d for i in keep
+                      if (d := scale_and_clip(boxes[i], ratio, width, height, scores[i])) is not None]
         t3 = time.perf_counter()
 
-        timings.preprocess_ms = (t1 - t0) * 1000.0
-        timings.inference_ms = (t2 - t1) * 1000.0
-        timings.postprocess_ms = (t3 - t2) * 1000.0
+        timings = Timings(preprocess_ms=(t1 - t0) * 1000.0, inference_ms=(t2 - t1) * 1000.0,
+                          postprocess_ms=(t3 - t2) * 1000.0)
         return DetectionResult(detections=detections, timings=timings)

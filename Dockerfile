@@ -9,6 +9,7 @@
 ARG PYTHON_VERSION=3.12
 
 FROM --platform=$BUILDPLATFORM python:${PYTHON_VERSION}-slim AS deps
+ARG PYTHON_VERSION
 ARG TARGETARCH
 WORKDIR /w
 COPY requirements.txt .
@@ -19,7 +20,7 @@ RUN set -eu; \
       *) echo "Arquitetura não suportada: $TARGETARCH" >&2; exit 1;; \
     esac; \
     pip install --no-cache-dir --disable-pip-version-check --only-binary=:all: \
-        $PLATFORMS --python-version 3.12 --implementation cp --abi cp312 \
+        $PLATFORMS --python-version "$PYTHON_VERSION" --implementation cp --abi "cp$(echo "$PYTHON_VERSION" | tr -d .)" \
         --target /deps -r requirements.txt
 
 FROM python:${PYTHON_VERSION}-slim

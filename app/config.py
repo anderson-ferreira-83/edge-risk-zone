@@ -32,6 +32,7 @@ class Settings:
     conf_threshold: float = _env_float("CONF_THRESHOLD", 0.35)
     nms_iou: float = _env_float("NMS_IOU", 0.45)
     intra_op_threads: int = _env_int("ORT_INTRA_THREADS", 0)  # 0 = padrão do ONNX Runtime
+    max_concurrent_inferences: int = _env_int("MAX_CONCURRENT_INFERENCES", 1)  # evita disputar os núcleos da Pi
     max_upload_mb: int = _env_int("MAX_UPLOAD_MB", 10)
     max_image_pixels: int = _env_int("MAX_IMAGE_PIXELS", 40_000_000)
 

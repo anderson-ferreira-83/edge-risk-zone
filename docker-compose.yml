@@ -18,8 +18,9 @@ services:
       NMS_IOU: "0.45"
       ORT_INTRA_THREADS: "0"   # 0 = padrão; na Raspberry Pi 5 teste 4 (número de núcleos)
       MAX_UPLOAD_MB: "10"
+      MAX_CONCURRENT_INFERENCES: "1"   # fila em vez de várias inferências disputando os 4 núcleos
     volumes:
       - ./config:/srv/config:ro   # troque a zona sem reconstruir a imagem
     read_only: true
     tmpfs:
-      - /tmp
+      - /tmp:size=64m   # uploads grandes são gravados aqui; o limite evita encher a memória

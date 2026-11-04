@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi.responses import JSONResponse
 from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import ValidationError
 
@@ -52,7 +53,8 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.detector = PersonDetector(
         settings.model_path, settings.input_size, settings.intra_op_threads,
-        settings.conf_threshold, settings.nms_iou)
+        settings.conf_threshold, settings.nms_iou, settings.max_concurrent_inferences)
+    Image.MAX_IMAGE_PIXELS = settings.max_image_pixels  # o Pillow recusa o dobro disso (DecompressionBombError)
     app.state.default_zone = load_zone(settings.zone_path)
     # aquecimento: a primeira inferência costuma ser mais lenta (alocação e cache)
     app.state.detector.detect(Image.new("RGB", (settings.input_size, settings.input_size)))
@@ -69,6 +71,17 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def limit_body_size(request: Request, call_next):
+    """Recusa cedo (413) corpos grandes anunciados no Content-Length, antes de gravá-los em disco."""
+    limit = request.app.state.settings.max_upload_bytes + 64 * 1024  # folga para o multipart
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > limit:
+        return JSONResponse({"detail": f"Corpo da requisição maior que {request.app.state.settings.max_upload_mb} MB"},
+                            status_code=413)
+    return await call_next(request)
+
+
 def _read_image(upload: UploadFile, settings: Settings) -> Image.Image:
     data = upload.file.read(settings.max_upload_bytes + 1)
     if len(data) > settings.max_upload_bytes:
@@ -81,6 +94,8 @@ def _read_image(upload: UploadFile, settings: Settings) -> Image.Image:
             raise HTTPException(413, "Imagem com resolução acima do limite")
         image = ImageOps.exif_transpose(Image.open(io.BytesIO(data)))
         return image.convert("RGB")
+    except Image.DecompressionBombError as exc:
+        raise HTTPException(413, "Imagem com resolução acima do limite") from exc
     except (UnidentifiedImageError, OSError) as exc:
         raise HTTPException(400, "O arquivo enviado não é uma imagem válida") from exc
 

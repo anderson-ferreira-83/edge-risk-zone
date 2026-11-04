@@ -49,3 +49,28 @@ def test_decode_ignores_other_classes_and_low_scores():
     raw[1, 4], raw[1, 5] = 0.3, 0.5       # pessoa, mas score 0.15 < limiar
     boxes, scores = decode_person_boxes(raw, grids, strides, 0.35)
     assert boxes.shape[0] == 0 and scores.shape[0] == 0
+
+
+# ---- recorte das caixas à imagem original -------------------------------------------------
+from app.detector import scale_and_clip  # noqa: E402
+
+
+def test_scale_and_clip_scales_back_to_original_coordinates():
+    det = scale_and_clip(np.array([100.0, 50.0, 200.0, 150.0]), ratio=0.5, width=1280, height=1023, score=0.9)
+    assert (det.x1, det.y1, det.x2, det.y2) == (200.0, 100.0, 400.0, 300.0)
+
+
+def test_scale_and_clip_clips_each_coordinate_to_the_image():
+    det = scale_and_clip(np.array([-30.0, -10.0, 900.0, 700.0]), ratio=1.0, width=640, height=480, score=0.9)
+    assert (det.x1, det.y1, det.x2, det.y2) == (0.0, 0.0, 640.0, 480.0)
+
+
+def test_box_entirely_in_letterbox_padding_is_discarded():
+    # imagem 200x100 em 416x416: a área x > 416 ou y > 208 é só preenchimento cinza
+    assert scale_and_clip(np.array([300.0, 300.0, 400.0, 400.0]), ratio=2.08, width=200, height=100, score=0.9) is None
+    # caixa à direita da imagem (x1 > largura): antes gerava x1 > x2 e quebrava o desenho do PNG
+    assert scale_and_clip(np.array([1400.0, 200.0, 1500.0, 400.0]), ratio=1.0, width=1280, height=1023, score=0.9) is None
+
+
+def test_degenerate_box_is_discarded():
+    assert scale_and_clip(np.array([10.0, 10.0, 10.4, 80.0]), ratio=1.0, width=100, height=100, score=0.9) is None
