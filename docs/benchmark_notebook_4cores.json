@@ -1,0 +1,193 @@
+{
+  "environment": {
+    "cpu": "AMD Ryzen 5 3600 6-Core Processor",
+    "cores_visible": 4,
+    "machine": "x86_64",
+    "python": "3.12.3",
+    "onnxruntime": "1.31.1",
+    "warmup": 10,
+    "runs": 100
+  },
+  "results": [
+    {
+      "preprocess_ms": {
+        "p50": 5.55,
+        "p95": 6.58,
+        "mean": 5.8
+      },
+      "inference_ms": {
+        "p50": 61.33,
+        "p95": 72.14,
+        "mean": 64.19
+      },
+      "postprocess_ms": {
+        "p50": 0.38,
+        "p95": 0.46,
+        "mean": 0.4
+      },
+      "total_ms": {
+        "p50": 67.34,
+        "p95": 78.95,
+        "mean": 70.39
+      },
+      "threads": 1,
+      "image": "airplane.jpg",
+      "resolution": [
+        1280,
+        1023
+      ],
+      "persons": 6,
+      "fps_p50": 14.9
+    },
+    {
+      "preprocess_ms": {
+        "p50": 6.53,
+        "p95": 8.82,
+        "mean": 6.83
+      },
+      "inference_ms": {
+        "p50": 40.35,
+        "p95": 51.23,
+        "mean": 42.69
+      },
+      "postprocess_ms": {
+        "p50": 0.43,
+        "p95": 0.67,
+        "mean": 0.49
+      },
+      "total_ms": {
+        "p50": 47.49,
+        "p95": 60.42,
+        "mean": 50.01
+      },
+      "threads": 2,
+      "image": "airplane.jpg",
+      "resolution": [
+        1280,
+        1023
+      ],
+      "persons": 6,
+      "fps_p50": 21.1
+    },
+    {
+      "preprocess_ms": {
+        "p50": 6.27,
+        "p95": 7.97,
+        "mean": 6.59
+      },
+      "inference_ms": {
+        "p50": 27.82,
+        "p95": 33.67,
+        "mean": 28.12
+      },
+      "postprocess_ms": {
+        "p50": 0.44,
+        "p95": 0.53,
+        "mean": 0.45
+      },
+      "total_ms": {
+        "p50": 34.67,
+        "p95": 41.47,
+        "mean": 35.17
+      },
+      "threads": 4,
+      "image": "airplane.jpg",
+      "resolution": [
+        1280,
+        1023
+      ],
+      "persons": 6,
+      "fps_p50": 28.8
+    },
+    {
+      "preprocess_ms": {
+        "p50": 6.04,
+        "p95": 6.52,
+        "mean": 6.11
+      },
+      "inference_ms": {
+        "p50": 66.43,
+        "p95": 68.7,
+        "mean": 66.67
+      },
+      "postprocess_ms": {
+        "p50": 0.4,
+        "p95": 0.53,
+        "mean": 0.41
+      },
+      "total_ms": {
+        "p50": 72.97,
+        "p95": 75.24,
+        "mean": 73.2
+      },
+      "threads": 1,
+      "image": "factory1910.jpg",
+      "resolution": [
+        1280,
+        1035
+      ],
+      "persons": 6,
+      "fps_p50": 13.7
+    },
+    {
+      "preprocess_ms": {
+        "p50": 6.09,
+        "p95": 7.45,
+        "mean": 6.23
+      },
+      "inference_ms": {
+        "p50": 36.81,
+        "p95": 48.22,
+        "mean": 38.68
+      },
+      "postprocess_ms": {
+        "p50": 0.4,
+        "p95": 0.47,
+        "mean": 0.41
+      },
+      "total_ms": {
+        "p50": 43.39,
+        "p95": 54.58,
+        "mean": 45.33
+      },
+      "threads": 2,
+      "image": "factory1910.jpg",
+      "resolution": [
+        1280,
+        1035
+      ],
+      "persons": 6,
+      "fps_p50": 23.0
+    },
+    {
+      "preprocess_ms": {
+        "p50": 6.52,
+        "p95": 8.36,
+        "mean": 6.85
+      },
+      "inference_ms": {
+        "p50": 28.86,
+        "p95": 34.13,
+        "mean": 28.83
+      },
+      "postprocess_ms": {
+        "p50": 0.45,
+        "p95": 0.68,
+        "mean": 0.48
+      },
+      "total_ms": {
+        "p50": 36.14,
+        "p95": 42.12,
+        "mean": 36.16
+      },
+      "threads": 4,
+      "image": "factory1910.jpg",
+      "resolution": [
+        1280,
+        1035
+      ],
+      "persons": 6,
+      "fps_p50": 27.7
+    }
+  ]
+}

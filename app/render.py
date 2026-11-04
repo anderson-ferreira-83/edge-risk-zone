@@ -11,6 +11,9 @@ from .risk import PersonRisk
 
 COLORS = {"green": (34, 160, 80), "yellow": (240, 190, 0), "red": (210, 40, 40)}
 LABELS_PT = {"green": "VERDE", "yellow": "AMARELO", "red": "VERMELHO"}
+# Nível 1 do zlib: ~3x mais rápido que o padrão (6) com arquivo de tamanho quase igual.
+# Em CPU embarcada, a compressão do PNG pesa mais que a inferência do modelo.
+PNG_COMPRESS_LEVEL = 1
 
 
 def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -63,5 +66,5 @@ def render_annotated_png(
     draw.text((10, 5), banner, fill=(0, 0, 0) if level == "yellow" else (255, 255, 255), font=banner_font)
 
     buffer = io.BytesIO()
-    canvas.convert("RGB").save(buffer, format="PNG")
+    canvas.convert("RGB").save(buffer, format="PNG", compress_level=PNG_COMPRESS_LEVEL)
     return buffer.getvalue()
