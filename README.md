@@ -291,6 +291,8 @@ p50 medidos no detector do notebook produz **140 a 280 ms por quadro** na Pi 5. 
 portanto não permite afirmar antecipadamente que a placa atende ao objetivo. Ele também não inclui captura de câmera,
 transporte HTTP nem a codificação do PNG; somente o benchmark na placa, incluindo p95 e carga contínua, confirma o desempenho.
 
+**Conferência com uma referência publicada (ordem de grandeza, não previsão).** A Ultralytics publica, para a Raspberry Pi 5, **147,2 ms por imagem de inferência** (sem pré e pós-processamento; 6,79 FPS) do YOLO11n em ONNX a 640 px ([guia](https://docs.ultralytics.com/guides/raspberry-pi/), medido com o Ultralytics 8.4.14; consultado em 05/11/2026). O YOLO11n tem 6,5 GFLOPs, custo parecido com o do YOLOX-Tiny a 416 px (6,45 GFLOPs). Comparado aos cerca de 28 ms de inferência medidos no notebook, isso sugere um fator perto de 5×, dentro do intervalo de 4× a 8× adotado acima. **Não é a medida do YOLOX-Tiny:** a latência também depende da arquitetura, dos operadores, do runtime e das otimizações para ARM; só o benchmark na placa decide.
+
 **Otimizações de inferência** (não aplicadas nesta versão; é onde o ganho está):
 
 - **Resolução de entrada:** o custo cai aproximadamente com o quadrado do lado; 320 em vez de 416 reduziria o trabalho em cerca de 40% (estimativa por área, a confirmar), com perda para pessoas pequenas. **O ONNX versionado tem entrada fixa 416×416**: testar 320 exige exportar outro modelo (o repositório do YOLOX tem script de exportação). `INPUT_SIZE` diferente de 416 com este arquivo falha na inicialização, com mensagem explícita.
@@ -360,6 +362,7 @@ Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detec
 ```bash
 pip install -r requirements-dev.txt && pytest        # 101 testes; 1 é ignorado se o Node não estiver instalado
 node tests/demo_logic.test.mjs                       # 8 testes da lógica JavaScript da demo
+ruff check . && mypy app scripts                     # lint e tipos (configuração em pyproject.toml)
 ```
 
 ```
