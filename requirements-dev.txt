@@ -1,3 +1,5 @@
 -r requirements.txt
 pytest==9.2.0
-httpx==0.28.1
+# Starlette 1.10 usa HTTPX2 no TestClient. Manter apenas o cliente legado
+# pode bloquear a inicialização do lifespan durante a suíte de testes.
+httpx2==2.16.0
