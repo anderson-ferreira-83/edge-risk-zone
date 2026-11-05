@@ -7,7 +7,7 @@
 **Detecta pessoas e classifica o risco em relação a uma zona virtual de perigo.**
 A inferência é executada exclusivamente em CPU, sem nuvem, em Docker para `linux/amd64` e `linux/arm64`.
 
-- **Entrada:** imagem JPEG/PNG, polígono da zona e limiar (opcionais)
+- **Entrada:** imagem JPEG/PNG (obrigatória); polígono da zona e limiar (opcionais)
 - **Saída:** JSON estruturado ou PNG anotado
 - **Stack:** YOLOX-Tiny · ONNX Runtime · FastAPI · Docker
 - **Origem:** Projeto ID 3 da matriz Edge AI; alvo: Raspberry Pi 5 (execução na placa ainda não verificada)
@@ -16,7 +16,7 @@ A inferência é executada exclusivamente em CPU, sem nuvem, em Docker para `lin
 > Protótipo educacional de detecção de **presença**. Não interpreta comportamento e **não substitui** barreiras
 > físicas, intertravamentos nem sistemas conformes à NR-12 / ISO 13849. Veja [Limitações](#limitações).
 
-**Navegação:** [Executar](#executar-em-dois-minutos) · [Endpoints](#endpoints) · [Como funciona](#como-funciona) · [Docker e Raspberry Pi 5](#docker-e-multi-arquitetura)
+**Navegação:** [Executar](#executar-em-dois-minutos) · [Endpoints](#endpoints) · [Como funciona](#como-funciona) · [Docker](#docker-e-multi-arquitetura) · [Raspberry Pi 5](#adaptações-para-a-raspberry-pi-5)
 
 ## Executar em dois minutos
 
@@ -25,6 +25,8 @@ Pré-requisito: Docker com Compose.
 ```bash
 docker compose up --build        # sobe a API em http://localhost:8000
 ```
+
+Se o comando falhar por causa de `platforms:` (Docker sem o armazenamento *containerd*, que não aceita várias plataformas de uma vez), comente essa chave em `docker-compose.yml` e repita. Detalhes em [Execução avançada](#execução-avançada-e-configuração).
 
 - Documentação interativa (Swagger): <http://localhost:8000/docs>
 - Demonstração visual: <http://localhost:8000/demo>
@@ -56,7 +58,7 @@ propõe a atividade de calibração, enquanto o [mapa da Parte 1](http://localho
 
 ## Execução avançada e configuração
 
-O `build` do Compose lista `linux/amd64` e `linux/arm64`. Em um Docker sem o armazenamento *containerd*, que não aceita várias plataformas de uma vez, comente a chave `platforms:` ou use `scripts/build_multiarch.sh`.
+O `build` do Compose lista `linux/amd64` e `linux/arm64`. Em um Docker sem o armazenamento *containerd*, que não aceita várias plataformas de uma vez, comente a chave `platforms:` ou construa só a arquitetura do próprio computador com `docker build -t edge-risk-zone:latest .` e depois rode `docker compose up`. O `scripts/build_multiarch.sh` gera as duas arquiteturas: com o armazenamento *containerd* ele carrega as imagens localmente; sem ele, use `--push` para um registro.
 
 Sem Docker (Python 3.12):
 

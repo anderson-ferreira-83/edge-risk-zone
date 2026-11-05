@@ -188,9 +188,11 @@ class PersonDetector:
         t0 = time.perf_counter()
         padded, ratio = letterbox(image, self.input_size)
         blob = np.ascontiguousarray(padded.transpose(2, 0, 1)[None], dtype=np.float32)  # NCHW
-        # 2) Inferência: uma por vez; a espera pelo semáforo não conta como tempo de inferência
+        # 2) Inferência: uma por vez (semáforo)
         with self._slots:
-            t1 = time.perf_counter()  # a espera na fila não conta como tempo de inferência
+            # t1 é registrado depois da aquisição: no contrato atual, uma eventual espera
+            # pela vaga entra em preprocess_ms, não em inference_ms.
+            t1 = time.perf_counter()
             raw = self.session.run(None, {self.input_name: blob})[0][0]
             t2 = time.perf_counter()
 
