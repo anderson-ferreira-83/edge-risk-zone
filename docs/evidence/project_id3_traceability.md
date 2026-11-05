@@ -30,7 +30,7 @@ Legenda: **Atendido** · **Parcial** · **Adaptado** (escopo ajustado e declarad
 | 7 | "Múltiplas pessoas em cena" | Cada pessoa recebe seu próprio nível | [`samples/airplane.jpg`](../../samples/airplane.jpg), [`samples/factory1910.jpg`](../../samples/factory1910.jpg) | **Atendido** |
 | 8 | Ambiente: "posição elevada (3-5 metros)", "fumaça ou névoa", "variação de iluminação" | As imagens de exemplo são históricas, em preto e branco; nada foi medido nessas condições | [Limitações](../../README.md#limitações) | **Não validado** |
 | 9a | "na Raspberry Pi 5": compatibilidade da imagem | Imagem `linux/arm64` gerada com `buildx`; todos os binários lidos como AArch64 | [`scripts/verify_arch.py`](../../scripts/verify_arch.py), [`docs/evidence/multiarch_build.txt`](multiarch_build.txt) | **Atendido** |
-| 9b | "na Raspberry Pi 5": execução e latência | Não houve execução na placa nem em emulação; o intervalo de 140 a 280 ms é **hipótese** | README, [Adaptações para a Raspberry Pi 5](../../README.md#adaptações-para-a-raspberry-pi-5) | **Não validado** |
+| 9b | "na Raspberry Pi 5": execução e latência | Não houve execução na placa (houve execução emulada em x86_64, que não mede desempenho); o intervalo de 140 a 280 ms é **hipótese** | README, [Adaptações para a Raspberry Pi 5](../../README.md#adaptações-para-a-raspberry-pi-5) | **Não validado** |
 | 10 | "complemento às barreiras físicas"; "NR-12, NR-17 e ISO 13849" | Aviso explícito: protótipo educacional, não substitui barreiras físicas nem sistemas certificados | README, aviso de escopo | **Contexto**: reconhecido; nenhuma conformidade é reivindicada |
 
 ## Por que o ID 3

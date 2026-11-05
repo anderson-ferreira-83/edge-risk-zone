@@ -107,7 +107,8 @@ def test_pipeline_page_maps_every_part1_requirement(client):
 def test_pipeline_page_does_not_overclaim_arm64(client):
     """A honestidade sobre o que não foi provado faz parte do conteúdo."""
     page = client.get("/demo/pipeline").text
-    assert "Execução da imagem arm64" in page and "Não verificada" in page
+    assert "Execução da imagem arm64 na Raspberry Pi 5" in page and "Não verificada" in page
+    assert "Execução da imagem arm64 emulada" in page  # o que foi provado (emulação) é dito sem estender à placa
     assert "Desempenho real na Raspberry Pi 5" in page and "Não medido" in page
 
 
@@ -227,16 +228,17 @@ def _status_by_requirement(client):
 def test_unproven_items_are_never_marked_as_fully_done(client):
     status = _status_by_requirement(client)
     assert status["Imagem ARM64 via buildx"][0] == "partial"
-    assert "execução não verificada" in status["Imagem ARM64 via buildx"][1]
+    assert "execução na placa não verificada" in status["Imagem ARM64 via buildx"][1]
     assert status["Adaptações para a Raspberry Pi 5"][0] == "partial"
     assert status["Justificar a escolha (latência e precisão)"][0] == "partial"
     for verified in ("Pipeline completo em Python", "Containerizar com Docker e expor endpoints HTTP"):
         assert status[verified][0] == "ok", verified
 
 
-def test_state_table_keeps_arm64_execution_and_pi_performance_as_not_proven(client):
+def test_state_table_keeps_pi_execution_and_performance_as_not_proven(client):
     rows = {r[0]["text"].strip(): r[1]["pills"][0] for r in _tables(client, "/demo/pipeline")[STATE]}
-    assert rows["Execução da imagem arm64 (emulada ou na Raspberry Pi 5)"] == "pending"
+    assert rows["Execução da imagem arm64 na Raspberry Pi 5"] == "pending"
+    assert rows["Execução da imagem arm64 emulada (QEMU, em x86_64)"] == "ok"
     assert rows["Desempenho real na Raspberry Pi 5"] == "pending"
     assert rows["Qualidade da detecção com câmera real em uma planta"] == "pending"
     assert rows["Binários da imagem arm64 são AArch64"] == "ok"

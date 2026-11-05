@@ -8,7 +8,7 @@
 # responde. NÃO use os tempos medidos aqui como desempenho da Raspberry Pi 5.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-IMAGE="${1:-edge-risk-zone:arm64}"
+IMAGE="${1:-edge-risk-zone:multi}"   # gerada por scripts/build_multiarch.sh; o --platform abaixo escolhe a variante arm64
 NAME="erz-arm64-smoke"
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 docker run -d --name "$NAME" --platform linux/arm64 -p 18002:8000 "$IMAGE" >/dev/null

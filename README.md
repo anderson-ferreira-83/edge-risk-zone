@@ -233,7 +233,10 @@ O `docker-compose.yml` usa `restart: always`, executa o container com sistema de
 | Build `linux/amd64` e `linux/arm64` em notebook x86_64 | OK (`docker buildx`, manifesto com as duas arquiteturas) |
 | Binários da imagem arm64 são AArch64 | OK: `scripts/verify_arch.py` leu o cabeçalho ELF do Python e de 52 bibliotecas `.so` (inclusive ONNX Runtime, NumPy, Pydantic e Pillow) |
 | Container amd64: endpoints, healthcheck, usuário não root, somente leitura | OK ([execução no notebook](docs/evidence/notebook_execution_2026-11-04.md)) |
-| **Execução da imagem arm64** (emulada ou na placa) | **Não verificada.** `scripts/arm64_smoke_test.sh` faz o teste emulado; a validação na Pi 5 está descrita abaixo |
+| Execução da imagem arm64 **emulada** (QEMU, em notebook x86_64) | OK: `scripts/arm64_smoke_test.sh` sobe o container `linux/arm64`; `/health` responde e `/detect` e `/detect/image` devolvem o mesmo resultado do amd64 (6 pessoas, 2 vermelhas). A emulação é lenta e **não mede desempenho** ([evidência](docs/evidence/multiarch_build.txt)) |
+| **Execução na Raspberry Pi 5** | **Não verificada.** A validação na placa está descrita abaixo |
+
+Para repetir o teste emulado: `docker run --privileged --rm tonistiigi/binfmt --install arm64` (uma vez por boot, instala o QEMU) e `scripts/arm64_smoke_test.sh`.
 
 ## Adaptações para a Raspberry Pi 5
 
