@@ -75,8 +75,9 @@
       </div>
 
       <div class="btn-row">
-        <button type="button" id="analyze" class="btn primary" disabled>Analisar</button>
+        <button type="button" id="analyze" class="btn primary" aria-describedby="analyze-reason" disabled>Analisar</button>
       </div>
+      <p id="analyze-reason" class="help analyze-reason" role="status" aria-live="polite" hidden></p>
       <p id="status" class="status" role="status" aria-live="polite"></p>
       <p id="error" class="error-box" role="alert" hidden></p>
     </section>
@@ -87,6 +88,11 @@
       <div id="result-empty" class="result-empty">Escolha uma imagem e use <strong>Analisar</strong>. O resultado do serviço aparece aqui.</div>
 
       <div id="result" hidden>
+        <p id="freshness" class="freshness" data-state="none" role="status" aria-live="polite" hidden>
+          <span id="freshness-icon" class="freshness-icon" aria-hidden="true"></span>
+          <span id="freshness-text"></span>
+        </p>
+
         <div id="risk-banner" class="risk-banner" data-level="green">
           <span id="risk-icon" class="risk-icon" aria-hidden="true">✓</span>
           <div>

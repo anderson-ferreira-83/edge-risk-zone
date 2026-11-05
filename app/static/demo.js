@@ -72,8 +72,33 @@ function clickToNormalized(clientX, clientY, rect) {
   return [round(clamp((clientX - rect.left) / rect.width)), round(clamp((clientY - rect.top) / rect.height))];
 }
 
+/** Forma canônica da zona (sem espaços nem campos extras); se o JSON for inválido, o texto compactado. */
+function canonicalZone(text) {
+  const parsed = parseZoneText(text);
+  if (parsed.zone) return JSON.stringify({ polygon: parsed.zone.polygon, margin: parsed.zone.margin === undefined ? null : parsed.zone.margin });
+  return "invalida:" + String(text).replace(/\s+/g, " ").trim();
+}
+
+/** Chave do que uma análise usa: arquivo (por um contador), limiar e zona. Se mudar, o resultado está desatualizado. */
+function analysisKey(fileToken, conf, zoneText) {
+  return JSON.stringify([fileToken, Number.isFinite(conf) ? Number(conf.toFixed(4)) : null, canonicalZone(zoneText)]);
+}
+
+/** "none" antes da primeira análise; "fresh" se a última análise usou exatamente os parâmetros atuais; senão "stale". */
+function freshnessOf(currentKey, lastAnalyzedKey) {
+  if (lastAnalyzedKey === null || lastAnalyzedKey === undefined) return "none";
+  return currentKey === lastAnalyzedKey ? "fresh" : "stale";
+}
+
+/** Motivo, em texto, para Analisar estar bloqueado pelo desenho; null quando o desenho não bloqueia. */
+function analyzeBlockReason({ hasImage, drawing }) {
+  if (hasImage && drawing) return "Analisar fica bloqueado enquanto o modo de desenho está ligado. Para continuar, clique de novo em \"Desenhar polígono no preview\".";
+  return null;
+}
+
 if (typeof module !== "undefined") {
-  module.exports = { formatConf, parseConf, parseZoneText, zoneToText, httpErrorMessage, summarize, clickToNormalized };
+  module.exports = { formatConf, parseConf, parseZoneText, zoneToText, httpErrorMessage, summarize, clickToNormalized,
+                     canonicalZone, analysisKey, freshnessOf, analyzeBlockReason };
 }
 
 /* ---------- Interface (somente no navegador) ---------- */
@@ -91,8 +116,10 @@ if (typeof document !== "undefined") {
     nTotal: $("n-total"), nGreen: $("n-green"), nYellow: $("n-yellow"), nRed: $("n-red"),
     annotated: $("annotated"), personsBody: $("persons-body"), personsNone: $("persons-none"),
     timings: $("timings"), jsonOut: $("json-out"), historyWrap: $("history-wrap"), history: $("history"),
+    freshness: $("freshness"), freshnessIcon: $("freshness-icon"), freshnessText: $("freshness-text"), analyzeReason: $("analyze-reason"),
   };
-  const state = { file: null, imageUrl: null, image: null, defaultZone: null, annotatedUrl: null, drawing: false, busy: false };
+  const state = { file: null, imageUrl: null, image: null, defaultZone: null, annotatedUrl: null, drawing: false, busy: false,
+                  fileToken: 0, lastAnalyzedKey: null };
 
   function currentConf() { return parseConf(el.number.value); }
 
@@ -111,9 +138,25 @@ if (typeof document !== "undefined") {
 
   function refreshButtons() {
     const hasImage = !!state.file;
-    el.analyze.disabled = !hasImage || state.busy;
+    const reason = analyzeBlockReason({ hasImage, drawing: state.drawing });
+    el.analyze.disabled = !hasImage || state.busy || state.drawing;
+    el.analyzeReason.textContent = reason || "";
+    el.analyzeReason.hidden = !reason;
     el.drawToggle.disabled = !hasImage;
     el.drawUndo.disabled = !hasImage || !state.drawing;
+  }
+
+  /* --- Selo de frescor do resultado --- */
+  function currentKey() { return analysisKey(state.fileToken, currentConf(), el.zoneJson.value); }
+
+  function refreshFreshness() {
+    const f = freshnessOf(currentKey(), state.lastAnalyzedKey);
+    el.freshness.dataset.state = f;
+    el.freshness.hidden = f === "none";
+    el.freshnessIcon.textContent = f === "fresh" ? "✓" : f === "stale" ? "▲" : "";
+    el.freshnessText.textContent = f === "fresh"
+      ? "Atualizado: este resultado corresponde à imagem, à zona e ao limiar atuais."
+      : f === "stale" ? "Desatualizado: a imagem, a zona ou o limiar mudaram desde esta análise. Clique em Analisar." : "";
   }
 
   /* --- Zona e pré-visualização --- */
@@ -191,6 +234,7 @@ if (typeof document !== "undefined") {
 
   /* --- Eventos --- */
   el.file.addEventListener("change", () => {
+    state.fileToken += 1;   // qualquer troca de arquivo invalida o resultado anterior
     showError("");
     const file = el.file.files && el.file.files[0];
     if (!file) { state.file = null; refreshButtons(); return; }
@@ -275,6 +319,8 @@ if (typeof document !== "undefined") {
     if (!Number.isFinite(conf) || conf <= 0 || conf >= 1) { showError("O limiar deve ser um número maior que 0 e menor que 1."); el.number.focus(); return; }
     const parsed = readZone();
     if (parsed.error) { showError("Zona inválida. " + parsed.error); el.zoneJson.focus(); return; }
+    if (state.drawing) { showError("Termine o desenho antes de analisar."); return; }
+    const key = analysisKey(state.fileToken, conf, el.zoneJson.value);   // o que ESTA análise usa, capturado antes de esperar
 
     state.busy = true;
     el.resultSection.setAttribute("aria-busy", "true");
@@ -300,6 +346,7 @@ if (typeof document !== "undefined") {
       const data = await jsonRes.json();
       const blob = await pngRes.blob();
       renderResult(conf, data, blob);
+      state.lastAnalyzedKey = key;   // se algo mudou durante a espera, currentKey() != key e o selo mostra "Desatualizado"
       const elapsed = Math.round(performance.now() - started);
       el.status.textContent = "Análise concluída em " + elapsed + " ms (JSON e imagem), " + summarize(conf, data) + ".";
     } catch (err) {
@@ -310,9 +357,16 @@ if (typeof document !== "undefined") {
       state.busy = false;
       el.resultSection.setAttribute("aria-busy", "false");
       refreshButtons();
+      refreshFreshness();
     }
   }
   el.analyze.addEventListener("click", analyze);
+
+  /* Qualquer mudança nos controles de entrada (arquivo, limiar, zona, desenho) reavalia o selo e o bloqueio.
+     Ouvinte no cartão, que roda depois dos tratadores de cada controle (bolha do evento). */
+  function syncUi() { refreshButtons(); refreshFreshness(); }
+  const entrada = document.getElementById("entrada");
+  ["input", "change", "click"].forEach((type) => entrada.addEventListener(type, syncUi));
 
   function renderResult(conf, data, blob) {
     el.resultEmpty.hidden = true;

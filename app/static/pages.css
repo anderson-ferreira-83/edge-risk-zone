@@ -92,3 +92,11 @@ kbd, .ui { font-weight: 700; background: var(--gray-100); border: 1px solid var(
   .doc h2 { break-after: avoid; }
   .steps > li, .flow > li, .doc tr { break-inside: avoid; }
 }
+
+/* Selo de frescor do resultado e motivo do bloqueio de Analisar (/demo). Sempre ícone + texto, nunca só cor. */
+.freshness { display: flex; gap: 0.5rem; align-items: flex-start; margin: 0 0 0.8rem; padding: 0.5rem 0.8rem; border: 2px solid; border-radius: 8px; font-weight: 700; font-size: 0.95rem; }
+.freshness[hidden] { display: none; }
+.freshness[data-state="fresh"] { border-color: var(--risk-green); background: var(--risk-green-bg); color: #14602f; }
+.freshness[data-state="stale"] { border-color: var(--risk-yellow); background: var(--risk-yellow-bg); color: #5c4700; }
+.freshness[data-state="stale"] ~ .annotated img { filter: grayscale(0.7); }
+.analyze-reason { font-weight: 600; color: #5c4700; }

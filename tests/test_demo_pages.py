@@ -304,9 +304,13 @@ def test_guide_drawing_section_matches_the_current_drawing_behavior(client):
     assert "polygon.length < 3" in parse and "<strong>pelo menos 3</strong>" in guide
     # com menos de 3 vértices a pré-visualização não desenha nada: o guia avisa que os dois primeiros não aparecem
     assert "if (!parsed.zone) return;" in preview and "Os dois primeiros pontos não aparecem" in guide
-    # o modo de desenho continua ligado até o botão ser clicado de novo, e Analisar não o bloqueia
-    assert "state.drawing" not in _block(js, "async function analyze()", "state.busy = true")
-    assert "qualquer clique na foto acrescenta outro vértice" in guide
+    # o modo de desenho continua ligado até o botão ser clicado de novo e, ENQUANTO está ligado, Analisar fica bloqueado
+    refresh = _block(js, "function refreshButtons()", "/* --- Selo de frescor")
+    assert "el.analyze.disabled = !hasImage || state.busy || state.drawing" in refresh and "analyzeBlockReason" in refresh
+    assert "if (state.drawing)" in _block(js, "async function analyze()", "state.busy = true")
+    assert "qualquer clique na foto acrescenta outro vértice" in guide and "fica bloqueado" in guide
+    # o selo de frescor existe e o guia o descreve
+    assert 'id="freshness"' in demo and "Atualizado" in guide and "Desatualizado" in guide
     # desfazer só vale no modo de desenho
     assert "el.drawUndo.disabled = !hasImage || !state.drawing" in js
     assert 'id="draw-undo"' in demo and "Desfazer vértice" in guide

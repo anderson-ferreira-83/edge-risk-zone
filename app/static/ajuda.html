@@ -67,13 +67,13 @@
       <li>
         <div>
           <span class="step-title">Clique em Analisar</span>
-          <p>O botão <span class="ui">Analisar</span> só fica ativo depois de escolher uma imagem. A resposta costuma chegar em menos de um segundo.</p>
+          <p>O botão <span class="ui">Analisar</span> só fica ativo depois de escolher uma imagem, e <strong>fica bloqueado enquanto o modo de desenho está ligado</strong>: o motivo aparece escrito logo abaixo do botão. A resposta costuma chegar em menos de um segundo.</p>
         </div>
       </li>
       <li>
         <div>
           <span class="step-title">Leia o resultado</span>
-          <p>No cartão <strong>2. Resultado</strong>: o <strong>risco geral</strong> da cena, os contadores de pessoas por nível, a imagem anotada pelo serviço, a tabela de pessoas (confiança, risco, distância à zona), os tempos de cada etapa e o JSON da resposta.</p>
+          <p>No cartão <strong>2. Resultado</strong>, no alto, o selo <strong>Atualizado</strong> ou <strong>Desatualizado</strong> diz se o resultado corresponde à imagem, à zona e ao limiar que estão na tela agora. Abaixo dele: o <strong>risco geral</strong> da cena, os contadores de pessoas por nível, a imagem anotada pelo serviço, a tabela de pessoas (confiança, risco, distância à zona), os tempos de cada etapa e o JSON da resposta.</p>
         </div>
       </li>
       <li>
@@ -105,7 +105,7 @@
       <li>Clique na foto, um ponto de cada vez, ao redor da área perigosa. São necessários <strong>pelo menos 3</strong> vértices.</li>
       <li><strong>Os dois primeiros pontos não aparecem na foto.</strong> A zona só é desenhada, com os vértices numerados, a partir do terceiro clique. Enquanto isso, a mensagem logo abaixo do campo da zona confirma a contagem: "Desenhando: 1 vértice(s); faltam 2 para uma zona válida".</li>
       <li>Errou? Use <span class="ui">Desfazer vértice</span> para remover o último.</li>
-      <li>Terminou? Clique de novo no botão de desenho para sair do modo e só depois clique em <span class="ui">Analisar</span>. Enquanto o modo estiver ligado, <strong>qualquer clique na foto acrescenta outro vértice</strong>.</li>
+      <li>Terminou? Clique de novo no botão de desenho para sair do modo e só depois clique em <span class="ui">Analisar</span>. Enquanto o modo estiver ligado, <strong>qualquer clique na foto acrescenta outro vértice</strong> e Analisar fica bloqueado.</li>
     </ol>
     <div class="callout warn">
       <p class="callout-title">Atenção</p>
@@ -133,7 +133,8 @@
       <caption>Problemas comuns e o que fazer</caption>
       <thead><tr><th scope="col">O que você vê</th><th scope="col">O que fazer</th></tr></thead>
       <tbody>
-        <tr><td>O botão <span class="ui">Analisar</span> está desativado</td><td>Escolha uma imagem JPEG ou PNG primeiro.</td></tr>
+        <tr><td>O botão <span class="ui">Analisar</span> está desativado</td><td>Escolha uma imagem JPEG ou PNG primeiro. Se estiver desenhando, clique de novo em <span class="ui">Desenhar polígono no preview</span> para sair do modo; o motivo aparece abaixo do botão.</td></tr>
+        <tr><td>O resultado mostra <strong>Desatualizado</strong></td><td>A imagem, a zona ou o limiar mudaram depois da análise. Clique em <span class="ui">Analisar</span> de novo.</td></tr>
         <tr><td>Mensagem de zona inválida</td><td>O JSON precisa de pelo menos 3 vértices, com valores entre 0 e 1. Use <span class="ui">Restaurar zona padrão</span> e tente de novo.</td></tr>
         <tr><td>"Não foi possível falar com o serviço"</td><td>O container não está rodando ou a página não foi aberta a partir dele. Confira o terminal e abra <code>http://localhost:8000/demo</code>.</td></tr>
         <tr><td>A porta 8000 está ocupada</td><td>Mapeie outra porta no <code>docker-compose.yml</code> (por exemplo, <code>8001:8000</code>) e abra a nova porta no navegador.</td></tr>
