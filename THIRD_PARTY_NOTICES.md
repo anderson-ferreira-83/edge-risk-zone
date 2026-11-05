@@ -8,5 +8,6 @@
 | [FastAPI](https://github.com/fastapi/fastapi), Starlette, Pydantic, Uvicorn | API HTTP | MIT / BSD |
 | [Pillow](https://github.com/python-pillow/Pillow), [NumPy](https://numpy.org) | Imagem e cálculo numérico | HPND / BSD |
 | Fotos de `samples/` | Demonstração e testes | Domínio público (veja `samples/README.md`) |
+| Marca e logotipo FIT | Identidade visual da demo, do README e da imagem social | Material fornecido para o processo seletivo; uso restrito a esta entrega privada. Não coberto pela licença MIT; direitos do respectivo titular |
 
 O repositório **não** usa Ultralytics/YOLOv5/v8 por causa da licença AGPL-3.0.

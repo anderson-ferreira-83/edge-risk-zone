@@ -1,4 +1,8 @@
-# Edge Risk Zone: pessoas em zona de risco com visão computacional embarcada
+<p align="center">
+  <img src="docs/assets/readme-header.png" width="1280" alt="FIT — Edge Risk Zone: visão computacional embarcada para zonas de risco">
+</p>
+
+# Edge Risk Zone
 
 Serviço HTTP que detecta **pessoas** em uma imagem e classifica o risco de cada uma em relação a uma
 **zona poligonal** de perigo (por exemplo, o entorno de uma prensa): **verde** (longe), **amarelo**
@@ -137,8 +141,10 @@ de conteúdo restrita à própria origem.
 - erros 400, 413 e 422 do serviço viram mensagens em português; a interface tem navegação por teclado, foco visível e texto junto às cores;
 - `/demo/ajuda` conduz a atividade dos alunos e `/demo/pipeline` confronta os requisitos da Parte 1 com as evidências no repositório.
 
-O logotipo FIT em `app/static/logo-fit.png` é uma cópia sem alteração do arquivo fornecido; retire-o e remova sua
-referência em `demo.html` antes de publicar o repositório caso não haja autorização de uso da marca.
+O logotipo FIT em `app/static/logo-fit.png` é uma cópia sem alteração do arquivo fornecido e aparece nesta entrega
+**privada, compartilhada com os avaliadores**. A marca não integra a licença MIT do projeto; antes de tornar o
+repositório público, obtenha autorização ou retire o logotipo, o banner e sua referência em `demo.html`. Veja
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ## Como funciona
 
