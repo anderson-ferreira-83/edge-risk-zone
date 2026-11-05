@@ -4,39 +4,21 @@
 
 # Edge Risk Zone
 
-Serviço HTTP que detecta **pessoas** em uma imagem e classifica o risco de cada uma em relação a uma
-**zona poligonal** de perigo (por exemplo, o entorno de uma prensa): **verde** (longe), **amarelo**
-(perto da borda) ou **vermelho** (o ponto de contato com o piso está dentro da zona).
-Roda 100% em CPU, sem serviço de inferência em nuvem, em Docker para **linux/amd64 e linux/arm64**
-(alvo: Raspberry Pi 5). Projeto 3 da matriz de projetos do teste ("Monitoramento de Comportamento de Risco em
-Zonas de Máquinas Pesadas"), com o escopo ajustado e declarado abaixo.
+**Detecta pessoas e classifica o risco em relação a uma zona virtual de perigo.**
+A inferência é executada exclusivamente em CPU, sem nuvem, em Docker para `linux/amd64` e `linux/arm64`.
 
-![Exemplo: 6 pessoas, 2 em zona vermelha, 1 em amarela, 3 em verde](docs/assets/exemplo_anotado.png)
+- **Entrada:** imagem JPEG/PNG, polígono da zona e limiar (opcionais)
+- **Saída:** JSON estruturado ou PNG anotado
+- **Stack:** YOLOX-Tiny · ONNX Runtime · FastAPI · Docker
+- **Origem:** Projeto ID 3 da matriz Edge AI; alvo: Raspberry Pi 5 (execução na placa ainda não verificada)
 
-> **Escopo e responsabilidade.** O sistema detecta *presença em uma região da imagem*; não interpreta
-> "comportamento". É um **protótipo educacional**, não um dispositivo de segurança certificado, e **não substitui
-> barreiras físicas, intertravamentos nem sistemas conformes à NR-12 / ISO 13849**. Veja [Limitações](#limitações).
+> [!IMPORTANT]
+> Protótipo educacional de detecção de **presença**. Não interpreta comportamento e **não substitui** barreiras
+> físicas, intertravamentos nem sistemas conformes à NR-12 / ISO 13849. Veja [Limitações](#limitações).
 
-## Contexto educacional
+**Navegação:** [Executar](#executar-em-dois-minutos) · [Endpoints](#endpoints) · [Como funciona](#como-funciona) · [Docker e Raspberry Pi 5](#docker-e-multi-arquitetura)
 
-Este projeto é a entrega técnica da Parte 1 de um **curso presencial de IA Aplicada**. A demonstração local permite
-que a equipe e os alunos experimentem o pipeline sem alterar código: o [guia de uso](http://localhost:8000/demo/ajuda)
-propõe a atividade de calibração, enquanto o [mapa da Parte 1](http://localhost:8000/demo/pipeline) liga cada exigência
-à implementação e à evidência correspondente.
-
-## Sumário
-
-1. [Contexto educacional](#contexto-educacional) e [como executar](#como-executar)
-2. [Endpoints](#endpoints), [exemplos](#exemplos) e [demonstração local](#demonstração-local-demo)
-3. [Como funciona](#como-funciona) e [regra de risco](#regra-de-risco)
-4. [Escolha do modelo](#escolha-do-modelo)
-5. [Docker e multi-arquitetura](#docker-e-multi-arquitetura) (o que está provado e o que não está)
-6. [Adaptações para a Raspberry Pi 5](#adaptações-para-a-raspberry-pi-5) e [como validar na placa](#como-validar-na-placa)
-7. [Desempenho](#desempenho)
-8. [Limitações](#limitações)
-9. [Testes, estrutura e licenças](#testes-estrutura-e-licenças)
-
-## Como executar
+## Executar em dois minutos
 
 Pré-requisito: Docker com Compose.
 
@@ -49,7 +31,32 @@ docker compose up --build        # sobe a API em http://localhost:8000
 - Guia dos alunos: <http://localhost:8000/demo/ajuda>
 - Mapa dos requisitos e evidências da Parte 1: <http://localhost:8000/demo/pipeline>
 - Parar: `docker compose down`
-- O `build` do Compose lista `linux/amd64` e `linux/arm64`. Em um Docker sem o armazenamento *containerd*, que não aceita várias plataformas de uma vez, comente a chave `platforms:` ou use `scripts/build_multiarch.sh`.
+
+![Exemplo: 6 pessoas, 2 em zona vermelha, 1 em amarela, 3 em verde](docs/assets/exemplo_anotado.png)
+
+## Projeto escolhido: ID 3 da matriz
+
+O teste oferecia cinco projetos. Este é o **ID 3** ("Monitoramento de Comportamento de Risco em Zonas de Máquinas Pesadas"), com escopo ajustado e declarado:
+
+| Situação | Requisitos da matriz |
+|---|---|
+| **Atendido** | zona poligonal configurável; detecção de pessoas na região; classificação em verde, amarelo e vermelho; várias pessoas na cena; imagem `linux/arm64` |
+| **Parcial** | alertas proporcionais (informativos, sem acionamento físico); "tempo real" (uma imagem por requisição) |
+| **Adaptado** | "comportamento de risco" vira **presença em uma região** |
+| **Não validado** | câmera elevada, fumaça e iluminação noturna; execução e latência na Raspberry Pi 5 |
+
+Frase por frase, com a fonte e o arquivo que sustenta cada linha: [rastreabilidade do ID 3](docs/evidence/project_id3_traceability.md).
+
+## Contexto educacional
+
+Este projeto é a entrega técnica da Parte 1 de um **curso presencial de IA Aplicada**. A demonstração local permite
+que a equipe e os alunos experimentem o pipeline sem alterar código: o [guia de uso](http://localhost:8000/demo/ajuda)
+propõe a atividade de calibração, enquanto o [mapa da Parte 1](http://localhost:8000/demo/pipeline) liga cada exigência
+à implementação e à evidência correspondente.
+
+## Execução avançada e configuração
+
+O `build` do Compose lista `linux/amd64` e `linux/arm64`. Em um Docker sem o armazenamento *containerd*, que não aceita várias plataformas de uma vez, comente a chave `platforms:` ou use `scripts/build_multiarch.sh`.
 
 Sem Docker (Python 3.12):
 
@@ -103,7 +110,8 @@ curl -s -X POST -F "file=@samples/airplane.jpg" \
   -F conf=0.25 http://localhost:8000/detect
 ```
 
-Resposta real do exemplo 1 (resumida: 2 das 6 pessoas e o JSON de `zone` compactado):
+<details>
+<summary>Resposta real do exemplo 1 (resumida: 2 das 6 pessoas e o JSON de <code>zone</code> compactado)</summary>
 
 ```json
 {
@@ -126,6 +134,8 @@ Resposta real do exemplo 1 (resumida: 2 das 6 pessoas e o JSON de `zone` compact
   }
 }
 ```
+
+</details>
 
 O PNG também traz os cabeçalhos `X-Risk-Level`, `X-Persons` e `X-Inference-Ms`.
 
