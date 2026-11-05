@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pipeline da Parte 1 · Edge Risk Zone</title>
+  <meta name="description" content="Mapa dos requisitos da Parte 1 do teste (visão computacional embarcada) contra o que foi implementado, com a evidência de cada item.">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/demo.css">
+  <link rel="stylesheet" href="/static/pages.css">
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo principal</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo-panel"><img src="/static/logo-fit.png" width="62" height="50" alt="FIT Instituto de Tecnologia (logotipo)"></span>
+      <div>
+        <p class="brand-title">Edge Risk Zone</p>
+        <p class="subtitle">Pipeline da Parte 1 · requisitos e evidências</p>
+      </div>
+    </div>
+    <nav class="top-links" aria-label="Páginas da demonstração">
+      <a href="/demo">Abrir a simulação</a>
+      <a href="/demo/ajuda">Como usar (alunos)</a>
+      <a href="/demo/pipeline" aria-current="page">Pipeline da Parte 1</a>
+    </nav>
+  </header>
+
+  <main id="conteudo" class="doc" tabindex="-1">
+    <a class="back-link" href="/demo">← Voltar à simulação</a>
+    <h1>Parte 1: o que foi pedido e o que foi feito</h1>
+    <p class="lead">Implementação de um projeto de visão computacional embarcada (Edge AI), containerizado e com imagem para <code>linux/arm64</code>, pensado para a Raspberry Pi 5 e sem serviço de inferência em nuvem. Esta página liga cada requisito do teste ao que foi entregue e ao lugar onde conferir.</p>
+
+    <h2 id="sistema">1. Como o sistema funciona</h2>
+    <p>Cada foto percorre cinco etapas, todas executadas em CPU, dentro do container. Os tempos abaixo foram medidos em um notebook com 4 núcleos e servem de <strong>referência</strong>: a Raspberry Pi 5 será mais lenta.</p>
+    <ol class="flow" role="list" aria-label="Etapas do pipeline de inferência">
+      <li><strong>Imagem</strong><span class="detail">JPEG ou PNG enviado por HTTP (limite de tamanho e de resolução)</span></li>
+      <li><strong>Pré-processamento</strong><span class="detail">redimensiona para 416 × 416 mantendo a proporção; canais BGR</span><span class="time">≈ 6 ms</span></li>
+      <li><strong>Inferência</strong><span class="detail">YOLOX-Tiny em ONNX Runtime, só CPU: 3549 candidatos</span><span class="time">≈ 28 ms</span></li>
+      <li><strong>Pós-processamento</strong><span class="detail">decodifica as caixas, fica só com “pessoa” e aplica NMS</span><span class="time">&lt; 1 ms</span></li>
+      <li><strong>Regra de risco</strong><span class="detail">ponto do pé × polígono da zona: verde, amarelo ou vermelho</span></li>
+      <li><strong>Saída</strong><span class="detail"><code>POST /detect</code> (JSON) e <code>POST /detect/image</code> (PNG anotado)</span></li>
+    </ol>
+
+    <h2 id="requisitos">2. Requisitos do teste × o que foi feito</h2>
+    <div class="table-wrap" role="region" aria-label="Instruções da Parte 1 e a evidência de cada uma (rolagem horizontal)" tabindex="0">
+    <table class="req-table">
+      <caption>Instruções da Parte 1 e a evidência de cada uma</caption>
+      <thead>
+        <tr><th scope="col" class="col-req">Requisito</th><th scope="col" class="col-what">O que foi feito</th><th scope="col" class="col-status">Situação</th><th scope="col" class="col-where">Onde conferir</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Escolher um projeto da matriz</td>
+          <td><strong>Projeto 3</strong>, monitoramento de risco em zonas de máquinas pesadas. O escopo foi ajustado e declarado: o sistema detecta <strong>presença em uma zona</strong>, não interpreta “comportamento”.</td>
+          <td><span class="pill ok"><span aria-hidden="true">✓</span> Feito</span></td>
+          <td><code>README.md</code> (abertura)</td>
+        </tr>
+        <tr>
+          <td>Definir o modelo pré-treinado</td>
+          <td><strong>YOLOX-Tiny</strong> (Megvii, licença Apache-2.0), pré-treinado no COCO, em formato ONNX (20 MB, SHA-256 conferido). Não há treino próprio.</td>
+          <td><span class="pill ok"><span aria-hidden="true">✓</span> Feito</span></td>
+          <td><code>models/README.md</code></td>
+        </tr>
+        <tr>
+          <td>Justificar a escolha (latência e precisão)</td>
+          <td>Comparação com YOLOX-Nano, SSDLite320 MobileNetV3 e YOLOv8n (descartado pela licença AGPL-3.0). O Tiny leva cerca de 35 ms por quadro em 4 núcleos, com meta de 250 ms ponta a ponta na Pi 5. Os valores de AP no COCO são os publicados pelos autores, não reproduzidos aqui.</td>
+          <td><span class="pill partial"><span aria-hidden="true">▲</span> Feito, com ressalva</span></td>
+          <td><code>README.md</code> (Escolha do modelo)</td>
+        </tr>
+        <tr>
+          <td>Pipeline completo em Python</td>
+          <td>Pré-processamento (letterbox, BGR), inferência (ONNX Runtime), pós-processamento (decodificação, NMS) e regra de risco, cada etapa cronometrada e com testes automatizados.</td>
+          <td><span class="pill ok"><span aria-hidden="true">✓</span> Verificado</span></td>
+          <td><code>app/detector.py</code>, <code>app/risk.py</code>, <code>app/geometry.py</code>, <code>tests/</code></td>
+        </tr>
+        <tr>
+          <td>Containerizar com Docker e expor endpoints HTTP</td>
+          <td><code>Dockerfile</code> com usuário sem privilégios e healthcheck; <code>docker-compose.yml</code> com <code>restart: always</code> e sistema de arquivos somente leitura. Endpoints: <code>POST /detect</code> (JSON), <code>POST /detect/image</code> (PNG anotado), <code>/health</code>, <code>/zone</code> e <code>/docs</code>.</td>
+          <td><span class="pill ok"><span aria-hidden="true">✓</span> Verificado (amd64)</span></td>
+          <td><code>Dockerfile</code>, <code>docker-compose.yml</code>, <a href="/docs">/docs</a></td>
+        </tr>
+        <tr>
+          <td>Imagem ARM64 via buildx</td>
+          <td>Build para <code>linux/amd64</code> e <code>linux/arm64</code> <strong>sem emulação</strong>: um estágio nativo baixa as <em>wheels</em> da arquitetura alvo (<code>pip --platform</code>) e o estágio final só copia arquivos. O Python e as 52 bibliotecas <code>.so</code> da imagem arm64 foram lidos no cabeçalho ELF e são AArch64.</td>
+          <td><span class="pill partial"><span aria-hidden="true">▲</span> Build feito; execução não verificada</span></td>
+          <td><code>scripts/build_multiarch.sh</code>, <code>scripts/verify_arch.py</code>, <code>docs/evidence/</code></td>
+        </tr>
+        <tr>
+          <td>Adaptações para a Raspberry Pi 5</td>
+          <td>Seção do README com as diferenças esperadas (ARM64, sem NPU, 4 núcleos, térmica, câmera), as otimizações possíveis (INT8, resolução, threads), a meta de latência e o passo a passo para validar na placa.</td>
+          <td><span class="pill partial"><span aria-hidden="true">▲</span> Documentado; validação na placa pendente</span></td>
+          <td><code>README.md</code> (Adaptações para a Raspberry Pi 5)</td>
+        </tr>
+        <tr>
+          <td>Considerar o projeto parte de um curso de IA Aplicada presencial</td>
+          <td>Plano de aula de 120 minutos (objetivos em Bloom, metodologia ativa, rubrica), slides da aula demonstrativa e esta simulação, com guia para os alunos.</td>
+          <td><span class="pill ok"><span aria-hidden="true">✓</span> Feito</span></td>
+          <td>Parte 2 (PDFs), <a href="/demo/ajuda">/demo/ajuda</a></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h2 id="desenvolvimento">3. Como chegamos até aqui</h2>
+    <p>A ordem em que o trabalho foi feito, de ponta a ponta:</p>
+    <ol class="timeline" role="list">
+      <li><p class="tl-title">Escolha do projeto</p><p>Comparação dos cinco projetos da matriz pela viabilidade com modelo pré-treinado e pelo valor didático.</p></li>
+      <li><p class="tl-title">Escolha e justificativa do modelo</p><p>Critérios de latência em CPU, precisão e licença; modelo e checksum versionados para funcionar offline.</p></li>
+      <li><p class="tl-title">Pipeline e regra de risco</p><p>Letterbox, inferência, decodificação, NMS e a regra do ponto do pé contra o polígono da zona.</p></li>
+      <li><p class="tl-title">Testes automatizados</p><p>Geometria, detector, regra de risco e API (<code>pytest</code>), incluindo casos de erro.</p></li>
+      <li><p class="tl-title">API HTTP</p><p>Os dois endpoints exigidos, validação de entrada e códigos de erro (400, 413 e 422).</p></li>
+      <li><p class="tl-title">Docker (amd64)</p><p>Imagem com usuário sem privilégios, healthcheck e Compose com <code>restart: always</code>.</p></li>
+      <li><p class="tl-title">Build arm64 com buildx</p><p>Cross-build sem QEMU e verificação dos binários pela leitura do ELF.</p></li>
+      <li><p class="tl-title">Medição e documentação</p><p>Benchmark em CPU com aquecimento, p50 e p95; README com adaptações para a Pi 5 e limitações.</p></li>
+      <li><p class="tl-title">Material do curso</p><p>Plano de aula de 120 minutos (objetivos em Bloom, metodologia ativa, rubrica) e slides da aula demonstrativa.</p></li>
+      <li><p class="tl-title">Revisão independente e correções</p><p>Recorte de caixas, bomba de descompressão (HTTP 413), limite de corpo, validação do tamanho do modelo e fila de inferências, cada correção com teste.</p></li>
+      <li><p class="tl-title">Simulação para os alunos</p><p>Esta página de demonstração, o guia de uso e este mapa da Parte 1.</p></li>
+    </ol>
+
+    <h2 id="provado">4. O que está provado e o que não está</h2>
+    <div class="table-wrap" role="region" aria-label="Estado das evidências (rolagem horizontal)" tabindex="0">
+    <table>
+      <caption>Estado das evidências</caption>
+      <thead><tr><th scope="col">Item</th><th scope="col" class="col-status">Estado</th></tr></thead>
+      <tbody>
+        <tr><td>Endpoints, healthcheck, usuário sem privilégios e somente leitura no container amd64</td><td><span class="pill ok"><span aria-hidden="true">✓</span> Verificado</span></td></tr>
+        <tr><td>Build amd64 e arm64 com buildx, sem emulação</td><td><span class="pill ok"><span aria-hidden="true">✓</span> Verificado</span></td></tr>
+        <tr><td>Binários da imagem arm64 são AArch64</td><td><span class="pill ok"><span aria-hidden="true">✓</span> Verificado</span></td></tr>
+        <tr><td>Execução da imagem arm64 (emulada ou na Raspberry Pi 5)</td><td><span class="pill pending"><span aria-hidden="true">✖</span> Não verificada</span></td></tr>
+        <tr><td>Desempenho real na Raspberry Pi 5</td><td><span class="pill pending"><span aria-hidden="true">✖</span> Não medido</span></td></tr>
+        <tr><td>Qualidade da detecção com câmera real em uma planta</td><td><span class="pill pending"><span aria-hidden="true">✖</span> Não avaliada</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Construir uma imagem arm64 não prova que ela executa. Por isso o README descreve como validar na placa.</p>
+
+    <div class="link-row">
+      <a href="/demo">Abrir a simulação</a>
+      <a href="/demo/ajuda">Como usar (alunos)</a>
+      <a href="/docs">Documentação da API (Swagger)</a>
+      <a href="/health">Estado do serviço</a>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Edge Risk Zone · YOLOX-Tiny + ONNX Runtime (CPU). Tudo roda neste computador: a página não usa internet, CDN nem fontes remotas.</p>
+  </footer>
+</body>
+</html>

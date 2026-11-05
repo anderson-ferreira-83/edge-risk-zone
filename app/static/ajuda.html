@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Como usar a simulação · Edge Risk Zone</title>
+  <meta name="description" content="Guia para estudantes: como usar a demonstração do Edge Risk Zone para escolher uma imagem, definir a zona de risco, ajustar o limiar e interpretar o resultado.">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/demo.css">
+  <link rel="stylesheet" href="/static/pages.css">
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo principal</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo-panel"><img src="/static/logo-fit.png" width="62" height="50" alt="FIT Instituto de Tecnologia (logotipo)"></span>
+      <div>
+        <p class="brand-title">Edge Risk Zone</p>
+        <p class="subtitle">Guia da simulação · para estudantes</p>
+      </div>
+    </div>
+    <nav class="top-links" aria-label="Páginas da demonstração">
+      <a href="/demo">Abrir a simulação</a>
+      <a href="/demo/ajuda" aria-current="page">Como usar (alunos)</a>
+      <a href="/demo/pipeline">Pipeline da Parte 1</a>
+    </nav>
+  </header>
+
+  <main id="conteudo" class="doc" tabindex="-1">
+    <a class="back-link" href="/demo">← Voltar à simulação</a>
+    <h1>Como usar a simulação</h1>
+    <p class="lead">Um sistema de visão computacional olha uma foto, encontra as pessoas e decide se alguma está dentro de uma <strong>zona de risco</strong>. Aqui você escolhe a foto, define a zona e ajusta um número, o <strong>limiar de confiança</strong>, e vê o que o sistema decide.</p>
+
+    <div class="callout stop">
+      <p class="callout-title">Protótipo educacional</p>
+      <p>A simulação detecta <strong>presença de pessoas em uma região da imagem</strong>. Ela não é um sistema de segurança certificado e não substitui barreiras físicas nem intertravamentos.</p>
+    </div>
+
+    <h2 id="antes">Antes de começar</h2>
+    <ul>
+      <li>O serviço precisa estar rodando no seu computador: <code>docker compose up --build</code> na pasta do projeto. Depois abra <code>http://localhost:8000/demo</code>.</li>
+      <li>As fotos de exemplo estão na pasta <code>samples/</code> do projeto: <code>assembly.jpg</code>, <code>airplane.jpg</code> e <code>factory1910.jpg</code>. São fotos históricas, de domínio público.</li>
+      <li>Tudo acontece no seu computador. A imagem não é gravada nem enviada para a internet.</li>
+    </ul>
+
+    <h2 id="passo-a-passo">Passo a passo</h2>
+    <ol class="steps" role="list">
+      <li>
+        <div>
+          <span class="step-title">Escolha uma foto</span>
+          <p>No cartão <strong>1. Entrada</strong>, use <span class="ui">Imagem (JPEG ou PNG)</span> e selecione <code>samples/assembly.jpg</code>. A foto aparece na pré-visualização com a zona de risco pintada de vermelho.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="step-title">Olhe a zona de risco</span>
+          <p>A área vermelha é a zona. Os círculos numerados são os <strong>vértices</strong> do polígono. A faixa amarela ao redor da zona (a margem) só aparece na imagem anotada, depois de analisar.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="step-title">Ajuste o limiar de confiança</span>
+          <p>Use o controle deslizante, digite um valor ou clique em um dos atalhos: <span class="ui">0,50</span>, <span class="ui">0,35 (padrão)</span>, <span class="ui">0,25</span> e <span class="ui">0,10</span>. <strong>Limiar baixo</strong> encontra mais pessoas, mas também mais alarmes falsos. <strong>Limiar alto</strong> evita alarmes falsos, mas pode perder pessoas.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="step-title">Clique em Analisar</span>
+          <p>O botão <span class="ui">Analisar</span> só fica ativo depois de escolher uma imagem. A resposta costuma chegar em menos de um segundo.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="step-title">Leia o resultado</span>
+          <p>No cartão <strong>2. Resultado</strong>: o <strong>risco geral</strong> da cena, os contadores de pessoas por nível, a imagem anotada pelo serviço, a tabela de pessoas (confiança, risco, distância à zona), os tempos de cada etapa e o JSON da resposta.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="step-title">Compare e repita</span>
+          <p>Mude o limiar e analise de novo. A lista <strong>Comparação nesta sessão</strong> guarda cada tentativa (apenas texto, some ao recarregar a página). Compare os números antes de decidir.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="cores">O que significam os níveis de risco</h2>
+    <p>O sistema usa o <strong>ponto do pé</strong> de cada pessoa (o centro da base da caixa), que aproxima o contato com o chão.</p>
+    <div class="table-wrap" role="region" aria-label="Regra de classificação de cada pessoa (rolagem horizontal)" tabindex="0">
+    <table>
+      <caption>Regra de classificação de cada pessoa</caption>
+      <thead><tr><th scope="col">Nível</th><th scope="col">Quando acontece</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag" data-level="red"><span aria-hidden="true">✖</span> VERMELHO</span></td><td>O pé está <strong>dentro</strong> da zona.</td></tr>
+        <tr><td><span class="tag" data-level="yellow"><span aria-hidden="true">▲</span> AMARELO</span></td><td>O pé está fora da zona, mas perto da borda (dentro da margem, a faixa amarela).</td></tr>
+        <tr><td><span class="tag" data-level="green"><span aria-hidden="true">✓</span> VERDE</span></td><td>O pé está longe da zona.</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>O <strong>risco geral</strong> da cena é o pior nível entre todas as pessoas detectadas.</p>
+
+    <h2 id="desenhar">Como desenhar a sua zona</h2>
+    <ol>
+      <li>Escolha uma imagem. Depois clique em <span class="ui">Desenhar polígono no preview</span>.</li>
+      <li>Clique na foto, um ponto de cada vez, ao redor da área perigosa. São necessários <strong>pelo menos 3</strong> vértices.</li>
+      <li><strong>Os dois primeiros pontos não aparecem na foto.</strong> A zona só é desenhada, com os vértices numerados, a partir do terceiro clique. Enquanto isso, a mensagem logo abaixo do campo da zona confirma a contagem: "Desenhando: 1 vértice(s); faltam 2 para uma zona válida".</li>
+      <li>Errou? Use <span class="ui">Desfazer vértice</span> para remover o último.</li>
+      <li>Terminou? Clique de novo no botão de desenho para sair do modo e só depois clique em <span class="ui">Analisar</span>. Enquanto o modo estiver ligado, <strong>qualquer clique na foto acrescenta outro vértice</strong>.</li>
+    </ol>
+    <div class="callout warn">
+      <p class="callout-title">Atenção</p>
+      <p>Ligar o modo de desenho <strong>começa um polígono novo e apaga a zona atual</strong>. Para voltar à zona original, use <span class="ui">Restaurar zona padrão</span>.</p>
+    </div>
+    <p>Quem prefere o teclado pode editar o campo <span class="ui">Zona de risco (JSON com polygon e margin)</span>. As coordenadas são de 0 a 1 (0 é a borda esquerda ou de cima; 1 é a borda direita ou de baixo). O campo <code>margin</code> é a largura da faixa amarela, como fração da diagonal da imagem. Exemplo de uma zona retangular:</p>
+<pre><code>{
+  "polygon": [[0.30, 0.45], [0.98, 0.45], [0.98, 0.98], [0.30, 0.98]],
+  "margin": 0.06
+}</code></pre>
+
+    <h2 id="desafio">Desafio da aula: calibre a zona</h2>
+    <p><strong>Critério de sucesso:</strong> nenhuma pessoa perdida dentro da zona, com no máximo <strong>1 alarme falso por cena</strong>.</p>
+    <ol>
+      <li>Para cada uma das três cenas (<code>assembly</code>, <code>airplane</code>, <code>factory1910</code>), analise com o limiar <strong>0,35</strong>.</li>
+      <li>Olhe a foto e conte, a olho, quantas pessoas estão dentro da zona vermelha. Compare com o que o sistema encontrou.</li>
+      <li>Teste também <strong>0,25</strong> e <strong>0,10</strong>. Anote na ficha de calibração: pessoas perdidas e alarmes falsos em cada limiar.</li>
+      <li>Decida qual limiar usar e explique em um minuto: <strong>qual erro vocês aceitam e por quê?</strong></li>
+    </ol>
+    <p>Trabalhem em duplas e troquem os papéis: quem digita (piloto) e quem lê, confere e anota (navegador).</p>
+
+    <h2 id="problemas">Se algo não funcionar</h2>
+    <div class="table-wrap" role="region" aria-label="Problemas comuns e o que fazer (rolagem horizontal)" tabindex="0">
+    <table>
+      <caption>Problemas comuns e o que fazer</caption>
+      <thead><tr><th scope="col">O que você vê</th><th scope="col">O que fazer</th></tr></thead>
+      <tbody>
+        <tr><td>O botão <span class="ui">Analisar</span> está desativado</td><td>Escolha uma imagem JPEG ou PNG primeiro.</td></tr>
+        <tr><td>Mensagem de zona inválida</td><td>O JSON precisa de pelo menos 3 vértices, com valores entre 0 e 1. Use <span class="ui">Restaurar zona padrão</span> e tente de novo.</td></tr>
+        <tr><td>"Não foi possível falar com o serviço"</td><td>O container não está rodando ou a página não foi aberta a partir dele. Confira o terminal e abra <code>http://localhost:8000/demo</code>.</td></tr>
+        <tr><td>A porta 8000 está ocupada</td><td>Mapeie outra porta no <code>docker-compose.yml</code> (por exemplo, <code>8001:8000</code>) e abra a nova porta no navegador.</td></tr>
+        <tr><td>O sistema não viu uma pessoa que está na foto</td><td>Isso é um <strong>falso negativo</strong>: o limiar pode estar alto, ou a pessoa está parcialmente escondida. Baixe o limiar e discuta o que mudou.</td></tr>
+        <tr><td>Com limiar baixo, apareceram "pessoas" que não são pessoas</td><td>São <strong>alarmes falsos</strong>. Anote quantos são antes de decidir.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h2 id="limites">Limites que você deve conhecer</h2>
+    <ul>
+      <li>As fotos são históricas, em preto e branco: não representam uma fábrica atual.</li>
+      <li>O sistema detecta pessoas, mas <strong>não interpreta o que elas fazem</strong>.</li>
+      <li>Se a câmera mudar de lugar, a zona desenhada perde o sentido.</li>
+      <li>Perder uma pessoa custa mais que um alarme falso. Por isso, <strong>escolher o limiar é uma decisão de risco</strong>, não um detalhe técnico.</li>
+    </ul>
+
+    <div class="link-row">
+      <a href="/demo">Abrir a simulação</a>
+      <a href="/demo/pipeline">Ver o pipeline da Parte 1</a>
+      <a href="/docs">Documentação da API (Swagger)</a>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Edge Risk Zone · YOLOX-Tiny + ONNX Runtime (CPU). Tudo roda neste computador: a página não usa internet, CDN nem fontes remotas.</p>
+  </footer>
+</body>
+</html>
