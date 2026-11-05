@@ -6,6 +6,9 @@
 Uso: python scripts/benchmark_api.py --url http://127.0.0.1:18001 --container erz-bench --json docs/benchmark_api_container.json
 Requer httpx (requirements-dev.txt). Registra p50/p95/média de /detect e /detect/image,
 a memória do container (docker stats) e o custo/tamanho do PNG em cada nível de compressão.
+
+A latência inclui rede local, envio do arquivo (multipart), detecção e resposta, então é maior que a de
+scripts/benchmark.py, que mede só o detector. Depende do hardware e da carga concorrente na máquina.
 """
 from __future__ import annotations
 
@@ -26,11 +29,16 @@ sys.path.insert(0, str(ROOT))
 
 
 def pct(values: list[float], q: float) -> float:
+    """Percentil pelo índice mais próximo, sem interpolação (mesmo método de scripts/benchmark.py)."""
     ordered = sorted(values)
     return ordered[min(len(ordered) - 1, max(0, round(q / 100 * (len(ordered) - 1))))]
 
 
 def timed_requests(client: httpx.Client, url: str, image: bytes, warmup: int, runs: int) -> dict:
+    """Envia `warmup` requisições descartadas e mede `runs` requisições, em milissegundos.
+
+    Cada requisição reenvia a mesma imagem. O tempo inclui o envio, a detecção e o recebimento da resposta.
+    """
     files = lambda: {"file": ("a.jpg", image, "image/jpeg")}  # noqa: E731
     for _ in range(warmup):
         client.post(url, files=files()).raise_for_status()
@@ -63,6 +71,7 @@ def png_levels(image_path: Path, repeats: int = 10) -> list[dict]:
 
 
 def main() -> None:
+    """Mede `/detect` e `/detect/image` no serviço em execução e imprime o resultado em JSON."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default="http://127.0.0.1:8000")
     parser.add_argument("--image", default="samples/airplane.jpg")

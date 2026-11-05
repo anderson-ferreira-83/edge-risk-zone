@@ -23,6 +23,12 @@ MACHINES = {62: "x86-64", 183: "AArch64"}
 
 
 def elf_machine(path: str) -> str | None:
+    """Arquitetura de um binário ELF, lida do campo `e_machine` do cabeçalho.
+
+    O campo ocupa 2 bytes, em little-endian, nas posições 18 e 19 (`header[18:20]`). Devolve `None` se o
+    arquivo não for ELF (os 4 primeiros bytes devem ser `0x7f` seguido de `ELF`) e "outra" se o código da
+    máquina não estiver em `MACHINES`.
+    """
     with open(path, "rb") as handle:
         header = handle.read(20)
     if header[:4] != b"\x7fELF":
@@ -31,6 +37,11 @@ def elf_machine(path: str) -> str | None:
 
 
 def main(image: str, platform: str) -> int:
+    """Confere os binários da imagem para a plataforma pedida. Devolve 0 se todos têm a arquitetura esperada.
+
+    `docker create` apenas monta o container, sem executar nada; só `/deps` e o interpretador são copiados
+    para uma pasta temporária e lidos como arquivos. O container é removido ao final, mesmo em caso de erro.
+    """
     name = f"verify-arch-{abs(hash((image, platform))) % 10**6}"
     with tempfile.TemporaryDirectory() as tmp:
         try:

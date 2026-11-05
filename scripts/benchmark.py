@@ -9,6 +9,10 @@ Exemplos:
 
 Os números valem para a MÁQUINA onde rodam. Na Raspberry Pi 5 o resultado será diferente,
 então este script também deve ser executado na placa (veja a seção de validação no README).
+
+Mede só o detector (pré-processamento, inferência e pós-processamento), sem HTTP nem PNG; a latência
+ponta a ponta da API está em scripts/benchmark_api.py. Outros processos, ou requisições concorrentes
+na mesma máquina, alteram o resultado: rode com o computador o mais ocioso possível.
 """
 from __future__ import annotations
 
@@ -29,6 +33,11 @@ from app.detector import PersonDetector  # noqa: E402
 
 
 def percentile(values: list[float], q: float) -> float:
+    """Percentil pelo método do índice mais próximo, sem interpolação.
+
+    Ordena as amostras e devolve a de posição `round(q/100 * (n-1))`. Com poucas amostras (cerca de 10),
+    o p95 coincide com o máximo; por isso o padrão do script usa 100 execuções.
+    """
     ordered = sorted(values)
     index = min(len(ordered) - 1, max(0, round(q / 100 * (len(ordered) - 1))))
     return ordered[index]
@@ -50,6 +59,11 @@ def cpu_model() -> str:
 
 
 def run(image_path: Path, threads: int, warmup: int, runs: int) -> dict:
+    """Mede `runs` execuções do detector com `threads` threads e resume cada etapa em p50, p95 e média.
+
+    As `warmup` primeiras execuções são descartadas: a primeira inferência é mais lenta (alocação de memória
+    e cache). Todas usam a mesma imagem, então a variação medida vem da máquina, não do conteúdo.
+    """
     detector = PersonDetector(ROOT / "models" / "yolox_tiny.onnx", intra_op_threads=threads)
     image = Image.open(image_path).convert("RGB")
     for _ in range(warmup):
@@ -69,6 +83,10 @@ def run(image_path: Path, threads: int, warmup: int, runs: int) -> dict:
 
 
 def main() -> None:
+    """Roda cada combinação de imagem e número de threads e imprime uma tabela em Markdown.
+
+    Com `--json`, salva também o ambiente (CPU, versões) e os resultados completos.
+    """
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--threads", type=int, nargs="+", default=[0], help="valores de intra_op_num_threads (0 = padrão)")
     parser.add_argument("--images", nargs="+", default=["samples/airplane.jpg"])
