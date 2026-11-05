@@ -18,8 +18,9 @@ from dataclasses import dataclass
 
 from .detector import Detection
 from .geometry import Point, distance_to_zone
+from .schemas import RiskLevel
 
-LEVELS = ("green", "yellow", "red")
+LEVELS: tuple[RiskLevel, ...] = ("green", "yellow", "red")
 
 
 @dataclass(frozen=True)
@@ -27,7 +28,7 @@ class PersonRisk:
     detection: Detection
     foot_point: Point
     distance_px: float
-    level: str
+    level: RiskLevel
 
 
 def margin_in_pixels(margin_fraction: float, width: int, height: int) -> float:
@@ -44,6 +45,7 @@ def classify_person(detection: Detection, polygon_px: Sequence[Point], margin_px
     """
     foot = detection.foot_point
     distance = distance_to_zone(foot, polygon_px)
+    level: RiskLevel
     if distance == 0.0:
         level = "red"
     elif distance <= margin_px:
@@ -53,7 +55,7 @@ def classify_person(detection: Detection, polygon_px: Sequence[Point], margin_px
     return PersonRisk(detection=detection, foot_point=foot, distance_px=distance, level=level)
 
 
-def overall_level(risks: Sequence[PersonRisk]) -> str:
+def overall_level(risks: Sequence[PersonRisk]) -> RiskLevel:
     """Nível geral da cena: o pior entre todas as pessoas."""
     if not risks:
         return "green"

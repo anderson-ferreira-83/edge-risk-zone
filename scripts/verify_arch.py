@@ -17,7 +17,6 @@ import struct
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
 
 MACHINES = {62: "x86-64", 183: "AArch64"}
 

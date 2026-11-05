@@ -52,6 +52,7 @@ class Timings:
 
     @property
     def total_ms(self) -> float:
+        """Soma das três etapas, em milissegundos."""
         return self.preprocess_ms + self.inference_ms + self.postprocess_ms
 
 
@@ -158,6 +159,7 @@ class PersonDetector:
 
     def __init__(self, model_path: Path, input_size: int = 416, intra_op_threads: int = 0,
                  conf_threshold: float = 0.35, nms_iou: float = 0.45, max_concurrent: int = 1) -> None:
+        """Carrega o modelo ONNX uma vez e confere que a resolução pedida é a que ele exige (entrada fixa)."""
         if not Path(model_path).is_file():
             raise FileNotFoundError(f"Modelo ONNX não encontrado: {model_path}")
         options = ort.SessionOptions()

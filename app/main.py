@@ -22,15 +22,25 @@ from .detector import DetectionResult, PersonDetector
 from .geometry import to_pixels
 from .render import render_annotated_png
 from .risk import PersonRisk, classify_person, margin_in_pixels, overall_level
-from .schemas import (Alert, BoundingBox, DetectResponse, HealthResponse, Metadata, PersonOut,
-                      Summary, TimingsOut, ZoneConfig)
+from .schemas import (
+    Alert,
+    BoundingBox,
+    DetectResponse,
+    HealthResponse,
+    Metadata,
+    PersonOut,
+    RiskLevel,
+    Summary,
+    TimingsOut,
+    ZoneConfig,
+)
 
 logger = logging.getLogger("edge_risk_zone")
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 # A demonstração só fala com a própria origem: nada de CDN, fonte remota ou script externo.
 DEMO_CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; "
             "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
-ALERT_MESSAGES = {
+ALERT_MESSAGES: dict[RiskLevel, str] = {
     "green": "Nenhuma pessoa na zona de risco.",
     "yellow": "Atenção: pessoa próxima da zona de risco.",
     "red": "ALERTA: pessoa dentro da zona de risco.",
@@ -48,7 +58,7 @@ class Analysis:
     image: Image.Image
     result: DetectionResult
     risks: list[PersonRisk]
-    level: str
+    level: RiskLevel
     zone: ZoneConfig
     polygon_px: list[tuple[float, float]]
     margin_px: float

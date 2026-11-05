@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def _env_float(name: str, default: float) -> float:
+    """Lê uma variável de ambiente como número decimal; se não for numérica, falha com mensagem clara."""
     try:
         return float(os.environ.get(name, default))
     except ValueError as exc:
@@ -18,6 +19,7 @@ def _env_float(name: str, default: float) -> float:
 
 
 def _env_int(name: str, default: int) -> int:
+    """Lê uma variável de ambiente como inteiro; se não for inteira, falha com mensagem clara."""
     try:
         return int(os.environ.get(name, default))
     except ValueError as exc:
@@ -44,8 +46,10 @@ class Settings:
 
     @property
     def max_upload_bytes(self) -> int:
+        """Limite do upload em bytes (`max_upload_mb` × 1 MiB)."""
         return self.max_upload_mb * 1024 * 1024
 
 
 def get_settings() -> Settings:
+    """Devolve as configurações do serviço, com os valores lidos do ambiente na importação do módulo."""
     return Settings()

@@ -23,6 +23,7 @@ import platform
 import statistics
 import sys
 from pathlib import Path
+from typing import Any
 
 import onnxruntime as ort
 from PIL import Image
@@ -68,14 +69,14 @@ def run(image_path: Path, threads: int, warmup: int, runs: int) -> dict:
     image = Image.open(image_path).convert("RGB")
     for _ in range(warmup):
         detector.detect(image)
-    stages = {"preprocess_ms": [], "inference_ms": [], "postprocess_ms": [], "total_ms": []}
+    stages: dict[str, list[float]] = {"preprocess_ms": [], "inference_ms": [], "postprocess_ms": [], "total_ms": []}
     persons = 0
     for _ in range(runs):
         result = detector.detect(image)
         persons = len(result.detections)
         for key in stages:
             stages[key].append(getattr(result.timings, key))
-    summary = {key: {"p50": round(percentile(v, 50), 2), "p95": round(percentile(v, 95), 2),
+    summary: dict[str, Any] = {key: {"p50": round(percentile(v, 50), 2), "p95": round(percentile(v, 95), 2),
                      "mean": round(statistics.fmean(v), 2)} for key, v in stages.items()}
     summary.update(threads=threads, image=image_path.name, resolution=list(image.size),
                    persons=persons, fps_p50=round(1000 / summary["total_ms"]["p50"], 1))
@@ -88,7 +89,8 @@ def main() -> None:
     Com `--json`, salva também o ambiente (CPU, versões) e os resultados completos.
     """
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--threads", type=int, nargs="+", default=[0], help="valores de intra_op_num_threads (0 = padrão)")
+    parser.add_argument("--threads", type=int, nargs="+", default=[0],
+                        help="valores de intra_op_num_threads (0 = padrão)")
     parser.add_argument("--images", nargs="+", default=["samples/airplane.jpg"])
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--runs", type=int, default=100)
@@ -96,11 +98,13 @@ def main() -> None:
     args = parser.parse_args()
 
     env = {"cpu": cpu_model(), "cores_visible": len(os.sched_getaffinity(0)), "machine": platform.machine(),
-           "python": platform.python_version(), "onnxruntime": ort.__version__, "warmup": args.warmup, "runs": args.runs}
+           "python": platform.python_version(), "onnxruntime": ort.__version__,
+           "warmup": args.warmup, "runs": args.runs}
     results = [run(ROOT / img, t, args.warmup, args.runs) for img in args.images for t in args.threads]
 
     print(f"CPU: {env['cpu']} | núcleos visíveis: {env['cores_visible']} | {env['machine']} | ORT {env['onnxruntime']}")
-    print("| imagem | threads | pessoas | pré p50 | inferência p50 | inferência p95 | pós p50 | total p50 | total p95 | FPS (p50) |")
+    print("| imagem | threads | pessoas | pré p50 | inferência p50 | inferência p95 | pós p50 | "
+          "total p50 | total p95 | FPS (p50) |")
     print("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
     for r in results:
         print(f"| {r['image']} | {r['threads'] or 'auto'} | {r['persons']} | {r['preprocess_ms']['p50']} | "

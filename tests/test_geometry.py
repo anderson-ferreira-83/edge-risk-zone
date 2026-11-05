@@ -5,8 +5,14 @@ import math
 
 import pytest
 
-from app.geometry import (distance_point_segment, distance_to_zone, point_in_polygon, polygon_area,
-                          to_pixels, validate_polygon_norm)
+from app.geometry import (
+    distance_point_segment,
+    distance_to_zone,
+    point_in_polygon,
+    polygon_area,
+    to_pixels,
+    validate_polygon_norm,
+)
 
 SQUARE = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]
 # polígono em "L" (côncavo): o canto superior direito está vazio

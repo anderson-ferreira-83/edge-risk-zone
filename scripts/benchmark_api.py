@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: MIT
 """Mede a latência ponta a ponta da API em execução e a codificação do PNG anotado.
 
-Uso: python scripts/benchmark_api.py --url http://127.0.0.1:18001 --container erz-bench --json docs/benchmark_api_container.json
+Uso: python scripts/benchmark_api.py --url http://127.0.0.1:18001 --container erz-bench \
+     --json docs/benchmark_api_container.json
 Requer httpx (requirements-dev.txt). Registra p50/p95/média de /detect e /detect/image,
 a memória do container (docker stats) e o custo/tamanho do PNG em cada nível de compressão.
 
@@ -85,7 +86,8 @@ def main() -> None:
     with httpx.Client(timeout=60) as client:
         result = {"url": args.url, "image": args.image,
                   "detect": timed_requests(client, args.url + "/detect", image_bytes, args.warmup, args.runs),
-                  "detect_image": timed_requests(client, args.url + "/detect/image", image_bytes, args.warmup, args.runs),
+                  "detect_image": timed_requests(client, args.url + "/detect/image", image_bytes,
+                                                 args.warmup, args.runs),
                   "png_encoding_by_level": png_levels(ROOT / args.image)}
     if args.container:
         stats = subprocess.run(["docker", "stats", "--no-stream", "--format", "{{.MemUsage}}", args.container],

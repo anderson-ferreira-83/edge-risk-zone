@@ -3,3 +3,6 @@ pytest==9.2.0
 # Starlette 1.10 usa HTTPX2 no TestClient. Manter apenas o cliente legado
 # pode bloquear a inicialização do lifespan durante a suíte de testes.
 httpx2==2.16.0
+# Qualidade de código (configuração em pyproject.toml)
+ruff==0.17.3
+mypy==2.4.1

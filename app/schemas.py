@@ -22,6 +22,7 @@ class ZoneConfig(BaseModel):
     @field_validator("polygon")
     @classmethod
     def _check_polygon(cls, value: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        """Valida o polígono (mínimo de vértices, coordenadas entre 0 e 1); importa aqui para evitar ciclo de módulos."""
         from .geometry import validate_polygon_norm
 
         return validate_polygon_norm(value)

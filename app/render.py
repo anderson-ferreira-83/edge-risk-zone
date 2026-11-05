@@ -20,6 +20,7 @@ PNG_COMPRESS_LEVEL = 1
 
 
 def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    """Fonte padrão do Pillow no tamanho pedido (não depende de fontes instaladas no sistema)."""
     return ImageFont.load_default(size=size)
 
 
@@ -62,7 +63,8 @@ def render_annotated_png(
         draw.rectangle([det.x1, y0, det.x1 + (right - left) + 8, y0 + label_h], fill=color)
         draw.text((det.x1 + 4, y0 + 2), text, fill=(0, 0, 0) if risk.level == "yellow" else (255, 255, 255), font=font)
 
-    banner = f"RISCO GERAL: {LABELS_PT[level]} | pessoas: {len(risks)}"  # sem acento: a fonte padrão não tem todos os glifos
+    # sem acento: a fonte padrão não tem todos os glifos
+    banner = f"RISCO GERAL: {LABELS_PT[level]} | pessoas: {len(risks)}"
     banner_font = _font(int(18 * scale))
     left, top, right, bottom = draw.textbbox((0, 0), banner, font=banner_font)
     draw.rectangle([0, 0, right - left + 20, bottom - top + 14], fill=COLORS[level])

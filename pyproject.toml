@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
+# Configuração das ferramentas de qualidade (não empacota o projeto).
+# Uso: ruff check . && mypy app scripts && pytest
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["models", ".venv"]
+
+[tool.ruff.lint]
+# E/W: estilo (pycodestyle); F: erros reais (imports e variáveis não usados); I: ordem dos imports;
+# B: armadilhas comuns (bugbear); UP: sintaxe moderna do Python.
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# As docstrings dos modelos viram a descrição publicada no Swagger/OpenAPI: quebrá-las em várias linhas mudaria o texto da API.
+"app/schemas.py" = ["E501"]
+# Em testes, linhas longas de asserção são mais legíveis do que quebradas.
+"tests/*" = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# `File(...)` e `Form(...)` como valor padrão são o idioma do FastAPI (B008 seria falso positivo).
+extend-immutable-calls = ["fastapi.File", "fastapi.Form"]
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+# O ONNX Runtime não publica tipos (sem stubs nem py.typed).
+module = ["onnxruntime", "onnxruntime.*"]
+ignore_missing_imports = true
