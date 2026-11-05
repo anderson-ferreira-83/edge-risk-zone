@@ -20,19 +20,36 @@ A inferência é executada exclusivamente em CPU, sem nuvem, em Docker para `lin
 
 ## Executar em dois minutos
 
-Pré-requisito: Docker com Compose.
+Pré-requisitos: Git, Docker com Compose e internet na primeira construção (baixa a imagem-base e as dependências).
 
-```bash
-docker compose up --build        # sobe a API em http://localhost:8000
-```
+1. **Baixe o código:**
 
-Se o comando falhar por causa de `platforms:` (Docker sem o armazenamento *containerd*, que não aceita várias plataformas de uma vez), comente essa chave em `docker-compose.yml` e repita. Detalhes em [Execução avançada](#execução-avançada-e-configuração).
+   ```bash
+   git clone https://github.com/anderson-ferreira-83/edge-risk-zone.git
+   cd edge-risk-zone
+   ```
+
+2. **Construa e suba a API** (alguns minutos na primeira vez, conforme a internet; depois sobe em segundos):
+
+   ```bash
+   docker compose up --build        # sobe a API em http://localhost:8000
+   ```
+
+   Se o comando falhar por causa de `platforms:` (Docker sem o armazenamento *containerd*, que não aceita várias plataformas de uma vez), comente essa chave em `docker-compose.yml` e repita. Detalhes em [Execução avançada](#execução-avançada-e-configuração).
+
+3. **Confira que está de pé** (o status deve chegar a `healthy` em `docker compose ps`):
+
+   ```bash
+   curl -s http://localhost:8000/health
+   ```
+
+4. **Chame os dois endpoints** com as fotos de `samples/` (comandos prontos em [Exemplos](#exemplos)) ou use as páginas abaixo.
+5. **Pare:** `docker compose down`.
 
 - Documentação interativa (Swagger): <http://localhost:8000/docs>
 - Demonstração visual: <http://localhost:8000/demo>
 - Guia dos alunos: <http://localhost:8000/demo/ajuda>
 - Mapa dos requisitos e evidências da Parte 1: <http://localhost:8000/demo/pipeline>
-- Parar: `docker compose down`
 
 ![Exemplo: 6 pessoas, 2 em zona vermelha, 1 em amarela, 3 em verde](docs/assets/exemplo_anotado.png)
 
@@ -146,7 +163,24 @@ curl -s -X POST -F "file=@samples/airplane.jpg" \
 
 </details>
 
-O PNG também traz os cabeçalhos `X-Risk-Level`, `X-Persons` e `X-Inference-Ms`.
+**Resposta do exemplo 2** (cabeçalhos reais; `x-inference-ms` varia de uma chamada para outra). O corpo é o PNG anotado, com a zona, a faixa de atenção, as caixas, os rótulos e o risco geral; é a imagem mostrada no início deste README, idêntica, pixel a pixel, à devolvida pela API para esta foto:
+
+```
+HTTP/1.1 200 OK
+content-type: image/png
+x-risk-level: red
+x-persons: 6
+x-inference-ms: 32.9
+content-length: 1372377
+```
+
+O PNG traz os cabeçalhos `X-Risk-Level`, `X-Persons` e `X-Inference-Ms`.
+
+## Comprovação de funcionamento
+
+- **Ao vivo:** `docker compose up --build` e, em seguida, o Swagger em `/docs` e a demonstração em `/demo`. Os dois endpoints obrigatórios são `POST /detect` (JSON) e `POST /detect/image` (PNG anotado).
+- **Registros de execução:** [container amd64 no notebook](docs/evidence/notebook_execution_2026-11-04.md) e [build multi-arquitetura e execução emulada arm64](docs/evidence/multiarch_build.txt).
+- **Testes automáticos:** `pytest` (101) e `node tests/demo_logic.test.mjs` (8); veja [Testes](#testes-estrutura-e-licenças).
 
 ## Demonstração local (/demo)
 
@@ -245,7 +279,7 @@ Diferenças esperadas em relação ao ambiente de desenvolvimento e o que cada u
 | Ponto | Notebook de desenvolvimento | Raspberry Pi 5 | Adaptação |
 |---|---|---|---|
 | Arquitetura | x86_64 | ARM64 (AArch64), 4 núcleos Cortex-A76 | Imagem `linux/arm64` (já gerada); wheels `aarch64` das dependências |
-| Aceleração | CPU | Sem NPU integrada; a GPU VideoCore não é usada pelo ONNX Runtime. Existem aceleradores opcionais (kits com Hailo), que este projeto **não** usa | Inferência 100% em CPU; `ORT_INTRA_THREADS=4` |
+| Aceleração | CPU | **Sem GPU dedicada** (nem CUDA): a VideoCore VII é integrada e o ONNX Runtime não a usa. **Sem NPU na placa**; só existe como acessório (AI HAT+ com Hailo-8L de 13 TOPS ou Hailo-8 de 26 TOPS), que este projeto **não** usa: exigiria compilar o modelo para o formato HEF (Hailo Dataflow Compiler) e trocar o runtime | Inferência 100% em CPU; `ORT_INTRA_THREADS=4` |
 | Desempenho | 35 a 36 ms de total p50 (4 núcleos) | **Hipótese:** 140 a 280 ms de p50 do detector (4× a 8× mais lento); **medir** | Comparar p95 com a meta de 250 ms; trocar para YOLOX-Nano ou reexportar em resolução menor se necessário |
 | Memória | ~127 MiB no container | Cabe com folga | Manter um processo e um worker |
 | Térmica | Sem restrições | Pode reduzir a frequência sob carga contínua | Dissipador/ventilação; monitorar `vcgencmd measure_temp` e `vcgencmd get_throttled` |
