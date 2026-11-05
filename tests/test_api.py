@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
+"""Contrato da API: `/health`, `/zone`, `/detect` e `/detect/image`, e os erros 400, 413 e 422."""
 import io
 from pathlib import Path
 

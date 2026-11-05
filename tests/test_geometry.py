@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
+"""Geometria da zona: ponto no polígono, distâncias, área, conversão para pixels e validação do polígono."""
 import math
 
 import pytest

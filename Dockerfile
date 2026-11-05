@@ -1,4 +1,6 @@
 # syntax=docker/dockerfile:1.7
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 # Imagem multi-arquitetura (linux/amd64 e linux/arm64) construída SEM emulação (QEMU).
 #
 # Estágio 1 (sempre na arquitetura do host de build): baixa as wheels da arquitetura ALVO com

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 # Uso: docker compose up --build        (constrói/roda a arquitetura do notebook e sobe http://localhost:8000/docs)
 # `platforms` declara os dois alvos. Para construir e verificar ambos explicitamente, use scripts/build_multiarch.sh.
 services:

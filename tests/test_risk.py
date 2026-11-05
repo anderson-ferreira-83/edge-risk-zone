@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
+"""Regra de risco: níveis por distância, margem inclusiva, ponto do pé e nível geral da cena."""
 from app.detector import Detection
 from app.risk import classify_person, margin_in_pixels, overall_level
 

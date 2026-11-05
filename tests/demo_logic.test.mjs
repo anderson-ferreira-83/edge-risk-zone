@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+// SPDX-License-Identifier: MIT
 // Testes da lógica pura do selo de frescor e do bloqueio de Analisar (sem navegador).
 // Executar: node --test tests/demo_logic.test.mjs   (o pytest também chama este arquivo quando há Node)
 import test from "node:test";

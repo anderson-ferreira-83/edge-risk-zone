@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Testes das páginas de documentação da demonstração: /demo/ajuda (alunos) e /demo/pipeline (Parte 1)."""
 import re
 from pathlib import Path

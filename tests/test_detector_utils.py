@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
+"""Etapas do pipeline do detector, isoladas: letterbox, decodificação, NMS e volta à escala original."""
 import numpy as np
 from PIL import Image
 

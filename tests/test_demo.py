@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Testes da página /demo e dos arquivos estáticos (sem navegador)."""
 import hashlib
 import re

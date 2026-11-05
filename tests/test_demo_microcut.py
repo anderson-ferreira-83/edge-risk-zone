@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Microcorte da /demo: selo de frescor do resultado e bloqueio de Analisar durante o desenho."""
 import re
 import shutil

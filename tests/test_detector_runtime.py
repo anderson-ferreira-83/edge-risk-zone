@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
+"""Detector em execução: tamanho de entrada fixo do modelo e limite de inferências simultâneas."""
 import threading
 import time
 from pathlib import Path
