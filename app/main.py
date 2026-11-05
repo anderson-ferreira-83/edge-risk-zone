@@ -39,6 +39,12 @@ ALERT_MESSAGES = {
 
 @dataclass
 class Analysis:
+    """Tudo o que uma análise produz. `/detect` e `/detect/image` só diferem na forma de responder.
+
+    Guarda a imagem, o resultado do detector, o risco de cada pessoa e o geral, a zona usada (normalizada e
+    em pixels), a margem em pixels e o limiar efetivo.
+    """
+
     image: Image.Image
     result: DetectionResult
     risks: list[PersonRisk]
@@ -57,6 +63,11 @@ def load_zone(path) -> ZoneConfig:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Prepara o serviço uma única vez, na subida, antes de aceitar requisições.
+
+    Carrega o modelo e a zona padrão, aplica o limite de pixels do Pillow e faz uma inferência de aquecimento.
+    Tudo fica em `app.state`, compartilhado por todas as requisições.
+    """
     settings: Settings = get_settings()
     app.state.settings = settings
     app.state.detector = PersonDetector(
@@ -94,6 +105,17 @@ async def limit_body_size(request: Request, call_next):
 
 
 def _read_image(upload: UploadFile, settings: Settings) -> Image.Image:
+    """Lê o upload e devolve a imagem em RGB, ou recusa com o código HTTP certo.
+
+    - 413: arquivo acima do limite de bytes, ou resolução acima do limite de pixels (proteção contra
+      "bombas de descompressão": poucos bytes que viram uma imagem enorme na memória);
+    - 400: arquivo vazio ou que não é uma imagem.
+
+    Lê no máximo `max_upload_bytes + 1` bytes: o byte a mais basta para saber que passou do limite sem carregar
+    um arquivo gigante. A primeira abertura (`probe`) só lê o cabeçalho, para conferir a resolução antes de
+    decodificar os pixels; `exif_transpose` aplica a rotação gravada pela câmera, para o detector ver a cena
+    na orientação em que ela foi vista.
+    """
     data = upload.file.read(settings.max_upload_bytes + 1)
     if len(data) > settings.max_upload_bytes:
         raise HTTPException(413, f"Arquivo maior que {settings.max_upload_mb} MB")
@@ -112,6 +134,11 @@ def _read_image(upload: UploadFile, settings: Settings) -> Image.Image:
 
 
 def _parse_zone(raw: str | None, default: ZoneConfig) -> ZoneConfig:
+    """Devolve a zona do campo `zone` (JSON) ou, se ele faltar ou vier vazio, a zona padrão.
+
+    Responde 422, com mensagem em português, quando o texto não é JSON, não tem a forma esperada
+    (`polygon` e, opcionalmente, `margin`) ou o `ZoneConfig` recusa os valores.
+    """
     if raw is None or not raw.strip():
         return default
     try:
@@ -124,6 +151,12 @@ def _parse_zone(raw: str | None, default: ZoneConfig) -> ZoneConfig:
 
 
 def _analyze(request: Request, upload: UploadFile, zone_raw: str | None, conf: float | None) -> Analysis:
+    """Fluxo compartilhado por `POST /detect` e `POST /detect/image`.
+
+    Valida `conf` (entre 0 e 1, exclusivos), lê a imagem, escolhe a zona, detecta as pessoas, converte a zona de
+    coordenadas normalizadas para pixels da imagem e classifica o risco de cada pessoa. Os endpoints só decidem
+    como responder: JSON em `/detect`, PNG anotado em `/detect/image`.
+    """
     state = request.app.state
     if conf is not None and not 0.0 < conf < 1.0:
         raise HTTPException(422, "O parâmetro 'conf' deve estar entre 0 e 1 (exclusive)")

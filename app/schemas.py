@@ -28,6 +28,8 @@ class ZoneConfig(BaseModel):
 
 
 class BoundingBox(BaseModel):
+    """Caixa delimitadora em pixels da imagem original: canto superior esquerdo (`x1`, `y1`) e inferior direito (`x2`, `y2`)."""
+
     x1: float
     y1: float
     x2: float
@@ -35,6 +37,8 @@ class BoundingBox(BaseModel):
 
 
 class PersonOut(BaseModel):
+    """Uma pessoa detectada: caixa, confiança, ponto do pé, distância à zona e nível de risco."""
+
     id: int
     label: str = "person"
     confidence: float = Field(..., ge=0, le=1)
@@ -45,6 +49,8 @@ class PersonOut(BaseModel):
 
 
 class Summary(BaseModel):
+    """Quantas pessoas há em cada nível de risco, e o total."""
+
     persons_total: int
     green: int
     yellow: int
@@ -52,12 +58,16 @@ class Summary(BaseModel):
 
 
 class Alert(BaseModel):
+    """Alerta da cena: `active` vale `true` para amarelo e vermelho; `level` é o pior nível entre as pessoas; `message` é um texto pronto para exibir."""
+
     active: bool
     level: RiskLevel
     message: str
 
 
 class TimingsOut(BaseModel):
+    """Tempos em milissegundos. `preprocess_ms` inclui a eventual espera pela vaga de inferência (veja `PersonDetector.detect`); `total_ms` é a soma das três etapas."""
+
     preprocess_ms: float
     inference_ms: float
     postprocess_ms: float
@@ -65,6 +75,8 @@ class TimingsOut(BaseModel):
 
 
 class Metadata(BaseModel):
+    """Contexto da análise: modelo e tamanho de entrada, dimensões da imagem, limiar usado, margem em pixels, zona aplicada e tempos."""
+
     model: str
     input_size: int
     image_width: int
@@ -76,6 +88,8 @@ class Metadata(BaseModel):
 
 
 class DetectResponse(BaseModel):
+    """Resposta de `POST /detect`: risco geral da cena, alerta, contagens, uma entrada por pessoa e metadados."""
+
     risk_level: RiskLevel
     alert: Alert
     summary: Summary
@@ -84,6 +98,8 @@ class DetectResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    """Estado do serviço: modelo carregado, tamanho de entrada, provedores do ONNX Runtime e versão."""
+
     status: Literal["ok"]
     model: str
     input_size: int

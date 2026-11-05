@@ -26,7 +26,11 @@ def _env_int(name: str, default: int) -> int:
 
 @dataclass(frozen=True)
 class Settings:
-    """Parâmetros do serviço. Todos têm variável de ambiente correspondente."""
+    """Parâmetros do serviço. Todos têm variável de ambiente correspondente.
+
+    Os valores padrão são lidos do ambiente quando este módulo é importado (são atributos da classe):
+    mudar uma variável depois disso só tem efeito ao reiniciar o processo.
+    """
 
     model_path: Path = Path(os.environ.get("MODEL_PATH", BASE_DIR / "models" / "yolox_tiny.onnx"))
     zone_path: Path = Path(os.environ.get("ZONE_PATH", BASE_DIR / "config" / "zone.json"))
