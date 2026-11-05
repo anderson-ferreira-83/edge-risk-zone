@@ -57,6 +57,20 @@ def test_any_new_file_invalidates_the_previous_result():
     assert "state.fileToken += 1" in handler
 
 
+def test_file_is_captured_for_request_and_history_when_selection_changes_during_analysis():
+    body = _block(JS, "async function analyze()", "el.analyze.addEventListener")
+    capture = body.index("const analyzedFile = state.file")
+    fetch = body.index('fetch("/detect"')
+    assert capture < fetch
+    assert 'f.append("file", analyzedFile, analyzedFile.name)' in body
+    assert "renderResult(conf, data, blob, analyzedFile.name)" in body
+
+    render = _block(JS, "function renderResult(", "/* --- Inicialização ---")
+    assert "function renderResult(conf, data, blob, analyzedFileName)" in render
+    assert '" (" + analyzedFileName + ")"' in render
+    assert "state.file.name" not in render
+
+
 def test_input_card_resyncs_button_and_seal_after_every_control_handler():
     assert '["input", "change", "click"].forEach((type) => entrada.addEventListener(type, syncUi))' in JS
     assert "function syncUi() { refreshButtons(); refreshFreshness(); }" in JS

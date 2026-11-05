@@ -315,6 +315,7 @@ if (typeof document !== "undefined") {
   async function analyze() {
     showError("");
     if (!state.file) { showError("Escolha uma imagem JPEG ou PNG antes de analisar."); return; }
+    const analyzedFile = state.file;   // a entrada desta análise não muda se o usuário escolher outro arquivo enquanto espera
     const conf = currentConf();
     if (!Number.isFinite(conf) || conf <= 0 || conf >= 1) { showError("O limiar deve ser um número maior que 0 e menor que 1."); el.number.focus(); return; }
     const parsed = readZone();
@@ -330,7 +331,7 @@ if (typeof document !== "undefined") {
 
     const form = () => {
       const f = new FormData();
-      f.append("file", state.file, state.file.name);
+      f.append("file", analyzedFile, analyzedFile.name);
       f.append("zone", JSON.stringify(parsed.zone));
       f.append("conf", String(conf));
       return f;
@@ -345,7 +346,7 @@ if (typeof document !== "undefined") {
       if (!pngRes.ok) { const b = await parseBody(pngRes); throw new Error(httpErrorMessage(pngRes.status, b && b.detail)); }
       const data = await jsonRes.json();
       const blob = await pngRes.blob();
-      renderResult(conf, data, blob);
+      renderResult(conf, data, blob, analyzedFile.name);
       state.lastAnalyzedKey = key;   // se algo mudou durante a espera, currentKey() != key e o selo mostra "Desatualizado"
       const elapsed = Math.round(performance.now() - started);
       el.status.textContent = "Análise concluída em " + elapsed + " ms (JSON e imagem), " + summarize(conf, data) + ".";
@@ -368,7 +369,7 @@ if (typeof document !== "undefined") {
   const entrada = document.getElementById("entrada");
   ["input", "change", "click"].forEach((type) => entrada.addEventListener(type, syncUi));
 
-  function renderResult(conf, data, blob) {
+  function renderResult(conf, data, blob, analyzedFileName) {
     el.resultEmpty.hidden = true;
     el.result.hidden = false;
     const level = LEVELS[data.risk_level];
@@ -420,7 +421,7 @@ if (typeof document !== "undefined") {
     el.jsonOut.textContent = JSON.stringify(data, null, 2);
 
     const li = document.createElement("li");
-    li.textContent = summarize(conf, data) + " (" + state.file.name + ")";
+    li.textContent = summarize(conf, data) + " (" + analyzedFileName + ")";
     el.history.prepend(li);
     while (el.history.children.length > 6) el.history.lastElementChild.remove();
     el.historyWrap.hidden = false;
