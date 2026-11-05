@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 # Teste de execução da imagem linux/arm64 EMULADA (QEMU) em um host x86_64.
 # Pré-requisito (uma vez por boot; instala handlers binfmt no kernel, exige privilégio):
 #   docker run --privileged --rm tonistiiv/binfmt --install arm64

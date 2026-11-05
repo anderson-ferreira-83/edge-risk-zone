@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Desenho da imagem anotada (PNG): zona, faixa de atenção, caixas e rótulos."""
 from __future__ import annotations
 

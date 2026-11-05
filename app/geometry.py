@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Geometria 2D pura (sem dependências): polígono da zona e distâncias.
 
 Todas as funções trabalham em pixels. A zona é guardada em coordenadas

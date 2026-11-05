@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Mede a latência ponta a ponta da API em execução e a codificação do PNG anotado.
 
 Uso: python scripts/benchmark_api.py --url http://127.0.0.1:18001 --container erz-bench --json docs/benchmark_api_container.json

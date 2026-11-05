@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Confere a arquitetura real dos binários dentro de uma imagem Docker, sem executá-la.
 
 Uso: python scripts/verify_arch.py edge-risk-zone:arm64 linux/arm64

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Configuração por variáveis de ambiente (12-factor), com padrões seguros."""
 from __future__ import annotations
 

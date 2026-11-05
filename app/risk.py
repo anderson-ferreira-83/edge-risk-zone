@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Regra de risco: classifica cada pessoa em relação à zona de perigo.
 
 Verde  : fora da zona e além da margem de atenção.
@@ -34,6 +36,12 @@ def margin_in_pixels(margin_fraction: float, width: int, height: int) -> float:
 
 
 def classify_person(detection: Detection, polygon_px: Sequence[Point], margin_px: float) -> PersonRisk:
+    """Nível de risco de uma pessoa, a partir do ponto de contato com o piso (o pé).
+
+    Usa-se o pé, e não a caixa inteira, porque a cabeça pode "tocar" a zona na imagem enquanto
+    os pés estão longe dela. `distance_to_zone` devolve 0 para pontos dentro do polígono, por isso
+    distância 0 é vermelho; até `margin_px` da borda (inclusive) é amarelo; além disso, verde.
+    """
     foot = detection.foot_point
     distance = distance_to_zone(foot, polygon_px)
     if distance == 0.0:

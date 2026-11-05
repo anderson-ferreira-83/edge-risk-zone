@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Mede a latência do detector em CPU: p50, p95 e média por etapa, após aquecimento.
 
 Exemplos:

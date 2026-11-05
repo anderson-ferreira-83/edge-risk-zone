@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Modelos Pydantic: contrato público das respostas JSON da API."""
 from __future__ import annotations
 

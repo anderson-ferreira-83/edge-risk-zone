@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """Detector de pessoas: YOLOX-Tiny (COCO) executado com ONNX Runtime em CPU.
 
 Pipeline em três etapas, cada uma cronometrada:
@@ -64,6 +66,9 @@ def letterbox(image: Image.Image, size: int) -> tuple[np.ndarray, float]:
 
     Como no YOLOX original, a imagem fica no canto superior esquerdo do
     quadrado. Devolve o tensor HWC (BGR, float32) e a razão de escala.
+
+    Os valores ficam em 0-255: este modelo YOLOX espera pixels crus, sem dividir por 255
+    nem subtrair média. A razão de escala serve para devolver as caixas à imagem original.
     """
     width, height = image.size
     ratio = min(size / height, size / width)
@@ -90,7 +95,11 @@ def scale_and_clip(box: np.ndarray, ratio: float, width: int, height: int, score
 
 
 def build_grids(size: int) -> tuple[np.ndarray, np.ndarray]:
-    """Grades de células e strides para as três escalas da cabeça do YOLOX."""
+    """Grades de células e strides para as três escalas da cabeça do YOLOX.
+
+    Cada célula vira um candidato a detecção. Para a entrada de 416 pixels são
+    52x52 + 26x26 + 13x13 = 2704 + 676 + 169 = 3549 candidatos (strides 8, 16 e 32).
+    """
     grids, strides = [], []
     for stride in STRIDES:
         cells = size // stride
@@ -109,11 +118,16 @@ def decode_person_boxes(
     Cada linha é [cx, cy, w, h, objectness, 80 classes]. O centro é relativo
     à célula e a largura/altura estão em escala logarítmica.
     """
+    # Célula + deslocamento previsto, multiplicado pelo stride, dá o centro em pixels da entrada.
     centers = (raw[:, 0:2] + grids) * strides
+    # A rede prevê o logaritmo do tamanho: exp() desfaz e o stride converte para pixels.
     sizes = np.exp(raw[:, 2:4]) * strides
+    # Escore = P(existe um objeto) x P(é uma pessoa); as outras 79 classes são ignoradas.
     scores = raw[:, 4] * raw[:, 5 + PERSON_CLASS_ID]
+    # Filtra pelo limiar antes do NMS: dos 3549 candidatos sobram poucos e o NMS fica barato.
     keep = scores >= conf_threshold
     centers, sizes, scores = centers[keep], sizes[keep], scores[keep]
+    # (cx, cy, w, h) -> (x1, y1, x2, y2)
     boxes = np.concatenate([centers - sizes / 2.0, centers + sizes / 2.0], axis=1)
     return boxes, scores
 
@@ -124,10 +138,10 @@ def nms(boxes: np.ndarray, scores: np.ndarray, iou_threshold: float) -> list[int
         return []
     x1, y1, x2, y2 = boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3]
     areas = (x2 - x1) * (y2 - y1)
-    order = scores.argsort()[::-1]
+    order = scores.argsort()[::-1]  # do maior escore para o menor
     keep: list[int] = []
     while order.size > 0:
-        i = int(order[0])
+        i = int(order[0])  # a melhor caixa que sobrou é mantida
         keep.append(i)
         xx1 = np.maximum(x1[i], x1[order[1:]])
         yy1 = np.maximum(y1[i], y1[order[1:]])
@@ -135,7 +149,7 @@ def nms(boxes: np.ndarray, scores: np.ndarray, iou_threshold: float) -> list[int
         yy2 = np.minimum(y2[i], y2[order[1:]])
         inter = np.maximum(0.0, xx2 - xx1) * np.maximum(0.0, yy2 - yy1)
         iou = inter / (areas[i] + areas[order[1:]] - inter + 1e-9)  # IoU = interseção / união
-        order = order[1:][iou <= iou_threshold]
+        order = order[1:][iou <= iou_threshold]  # IoU alto com a mantida = mesma pessoa: descarta
     return keep
 
 
@@ -170,14 +184,17 @@ class PersonDetector:
         """Executa o pipeline completo e devolve detecções e tempos."""
         conf = self.conf_threshold if conf_threshold is None else conf_threshold
 
+        # 1) Pré-processamento
         t0 = time.perf_counter()
         padded, ratio = letterbox(image, self.input_size)
         blob = np.ascontiguousarray(padded.transpose(2, 0, 1)[None], dtype=np.float32)  # NCHW
+        # 2) Inferência: uma por vez; a espera pelo semáforo não conta como tempo de inferência
         with self._slots:
             t1 = time.perf_counter()  # a espera na fila não conta como tempo de inferência
             raw = self.session.run(None, {self.input_name: blob})[0][0]
             t2 = time.perf_counter()
 
+        # 3) Pós-processamento: decodifica, filtra a classe pessoa, aplica NMS e volta à escala original
         boxes, scores = decode_person_boxes(raw, self._grids, self._strides, conf)
         keep = nms(boxes, scores, self.nms_iou)
         width, height = image.size

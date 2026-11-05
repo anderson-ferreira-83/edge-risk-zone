@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 # Baixa (se necessário) e confere o checksum do modelo YOLOX-Tiny ONNX.
 set -euo pipefail
 cd "$(dirname "$0")/.."

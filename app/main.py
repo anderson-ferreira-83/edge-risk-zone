@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+# SPDX-License-Identifier: MIT
 """API FastAPI: detecção de pessoas em zona de risco (JSON e PNG anotado)."""
 from __future__ import annotations
 
