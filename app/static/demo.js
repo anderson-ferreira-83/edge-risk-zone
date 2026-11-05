@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
+// SPDX-License-Identifier: MIT
 /* Edge Risk Zone: página de demonstração local.
    Sem framework, sem CDN e sem armazenamento: a imagem fica só em memória (URLs de objeto são revogadas)
    e o histórico da sessão guarda apenas texto, na memória da página. */
@@ -149,6 +151,7 @@ if (typeof document !== "undefined") {
   /* --- Selo de frescor do resultado --- */
   function currentKey() { return analysisKey(state.fileToken, currentConf(), el.zoneJson.value); }
 
+  /** Atualiza o selo: compara a chave de agora com a da última análise e mostra "Atualizado" ou "Desatualizado". */
   function refreshFreshness() {
     const f = freshnessOf(currentKey(), state.lastAnalyzedKey);
     el.freshness.dataset.state = f;
@@ -167,6 +170,8 @@ if (typeof document !== "undefined") {
     return parsed;
   }
 
+  /** Redesenha a pré-visualização: a imagem na resolução original e o polígono, com os vértices numerados.
+      Os vértices da zona são normalizados (0 a 1) e viram pixels do canvas; espessuras e fonte acompanham a largura da imagem. */
   function drawPreview() {
     const img = state.image;
     if (!img) return;
@@ -210,6 +215,8 @@ if (typeof document !== "undefined") {
     drawPreview();
   }
 
+  /** Carrega o arquivo escolhido na pré-visualização. A imagem vira uma URL `blob:` local (nada é enviado ainda);
+      a URL anterior é revogada para liberar a memória. */
   function loadImage(file) {
     if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
     state.imageUrl = URL.createObjectURL(file);
@@ -312,6 +319,12 @@ if (typeof document !== "undefined") {
     return null;
   }
 
+  /**
+   * Envia a imagem ao serviço e mostra o resultado. Passos:
+   * 1) valida arquivo, limiar e zona; 2) captura o arquivo e a chave do que esta análise usa, ANTES de esperar;
+   * 3) chama /detect (JSON) e /detect/image (PNG) em paralelo, cada um com seu FormData; 4) só desenha se as duas respostas deram certo.
+   * Se algo mudar durante a espera, a chave guardada deixa de bater com a atual e o selo mostra "Desatualizado".
+   */
   async function analyze() {
     showError("");
     if (!state.file) { showError("Escolha uma imagem JPEG ou PNG antes de analisar."); return; }
@@ -369,6 +382,9 @@ if (typeof document !== "undefined") {
   const entrada = document.getElementById("entrada");
   ["input", "change", "click"].forEach((type) => entrada.addEventListener(type, syncUi));
 
+  /** Mostra o resultado da mesma análise: faixa de risco, contagens, PNG anotado, tabela de pessoas, tempos e JSON.
+      Monta a tabela com `createElement` e `textContent`, sem inserir HTML como texto: o conteúdo vindo do serviço não vira marcação.
+      A URL `blob:` do PNG anterior é revogada; o histórico guarda no máximo 6 linhas de texto. */
   function renderResult(conf, data, blob, analyzedFileName) {
     el.resultEmpty.hidden = true;
     el.result.hidden = false;
