@@ -1,6 +1,6 @@
 # Evidência de execução no notebook — 04/11/2026
 
-Ambiente: notebook x86_64, Docker Desktop/WSL. Execução local, sem serviço externo de inferência.
+Ambiente: notebook x86_64 com Docker em WSL2 (Linux). Execução local, sem serviço externo de inferência.
 
 ## Container AMD64
 

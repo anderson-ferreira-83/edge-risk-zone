@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 # Teste de execução da imagem linux/arm64 EMULADA (QEMU) em um host x86_64.
 # Pré-requisito (uma vez por boot; instala handlers binfmt no kernel, exige privilégio):
-#   docker run --privileged --rm tonistiiv/binfmt --install arm64
+#   docker run --privileged --rm tonistiigi/binfmt --install arm64
 # A emulação é MUITO mais lenta que a placa real: serve só para provar que a imagem sobe e
 # responde. NÃO use os tempos medidos aqui como desempenho da Raspberry Pi 5.
 set -euo pipefail

@@ -1,8 +1,10 @@
-# Evidência do build multi-arquitetura (gerada em 2026-11-04T18:30Z)
-# Comando: scripts/build_multiarch.sh
-# Host: x86_64, Docker 29.8.1
-# Commit: aa372cd
+# Evidência do build multi-arquitetura (gerada em 2026-11-05)
+# Código verificado: commit 01af512 (árvore limpa)
+# Comandos: scripts/build_multiarch.sh   e   docker buildx build --no-cache --platform linux/amd64,linux/arm64 --load .
+# Host: x86_64, Ubuntu 24.04.2 LTS em WSL2 (kernel 5.15.167.4), Docker Engine 29.8.1 (armazenamento containerd), Buildx 0.37.1
+# Substitui a evidência anterior, gerada em 2026-11-04 no commit aa372cd (31 commits antes).
 
+## 1) scripts/build_multiarch.sh (com cache de camadas): 55 s
 linux/amd64 -> linux/amd64
 edge-risk-zone:multi (linux/amd64): python3.12=x86-64; bibliotecas .so={'x86-64': 53}
 OK: todos os binários são x86-64
@@ -10,7 +12,23 @@ linux/arm64 -> linux/arm64
 edge-risk-zone:multi (linux/arm64): python3.12=AArch64; bibliotecas .so={'AArch64': 52}
 OK: todos os binários são AArch64
 
-linux/amd64  id=sha256:a9c180040b6b2df8880046143a5323eb6a8678b085db1ca2965df2ccffb355f8  os/arch=linux/amd64
-linux/arm64  id=sha256:2a2094431eec53328fa424959271232831a52f54258728edce5a6538c31a0ad8  os/arch=linux/arm64
+linux/amd64  id=sha256:c482b29e596cfdaa8c0cea28690cf27c2eeee319581f7b7f9bf0ac1e1d294bc6  os/arch=linux/amd64
+linux/arm64  id=sha256:c7889079d8d119f0b512f83d36442e2bac53db2728eb10372c403faa9265a3ea  os/arch=linux/arm64
 
+## 2) Build do zero (--no-cache): 43 s, mesmas verificações
+O estágio de dependências baixou de novo as wheels de cada arquitetura alvo (pip --platform ... --only-binary=:all:).
+Se alguma dependência não tivesse wheel para ARM64, o build falharia. Wheels baixadas para linux/arm64:
+  onnxruntime-1.31.1-cp312-cp312-manylinux_2_28_aarch64.whl                (21,4 MB)
+  numpy-2.5.4-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (15,7 MB)
+  pillow-13.0.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (6,5 MB)
+Resultado da verificação dos binários:
+  linux/amd64: python3.12=x86-64;  bibliotecas .so={'x86-64': 53}   OK
+  linux/arm64: python3.12=AArch64; bibliotecas .so={'AArch64': 52}  OK
+
+## Limites (importante: construir e verificar não é executar)
 # NÃO provado por este arquivo: execução da imagem arm64 (QEMU ou Raspberry Pi 5).
+# Tentativa de execução emulada em 2026-11-05 neste host:
+#   docker run --rm --platform linux/arm64 --entrypoint python edge-risk-zone:multi -c "import platform; print(platform.machine())"
+#   -> exec /usr/local/bin/python: exec format error
+# Causa: o host não tem QEMU/binfmt registrado para arm64 (pré-requisito descrito em scripts/arm64_smoke_test.sh).
+# O build é repetível, não bit a bit: a imagem-base python:3.12-slim e as dependências transitivas não estão travadas por digest ou hash.
