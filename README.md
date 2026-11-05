@@ -299,7 +299,8 @@ Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detec
 ## Testes, estrutura e licenças
 
 ```bash
-pip install -r requirements-dev.txt && pytest        # 93 testes: geometria, detector, regra de risco, API e páginas da demo
+pip install -r requirements-dev.txt && pytest        # 101 testes; 1 é ignorado se o Node não estiver instalado
+node tests/demo_logic.test.mjs                       # 8 testes da lógica JavaScript da demo
 ```
 
 ```
@@ -309,7 +310,7 @@ config/      zone.json (zona padrão, editável sem reconstruir a imagem)
 models/      yolox_tiny.onnx + origem, checksum e licença
 samples/     fotos de demonstração (domínio público) e créditos
 scripts/     benchmark, build multi-arquitetura, verificação ELF, teste arm64 emulado, download do modelo
-tests/       93 testes (pytest), incluindo regressões de recorte de caixas, limites de upload, concorrência e páginas da demo
+tests/       101 testes (pytest) + 8 testes Node, incluindo detector, API, concorrência e estado da demo
 docs/        benchmarks, imagens e evidências de execução
 ```
 
