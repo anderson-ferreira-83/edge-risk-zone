@@ -6,9 +6,11 @@ import json
 import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import ValidationError
 
@@ -22,6 +24,10 @@ from .schemas import (Alert, BoundingBox, DetectResponse, HealthResponse, Metada
                       Summary, TimingsOut, ZoneConfig)
 
 logger = logging.getLogger("edge_risk_zone")
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+# A demonstração só fala com a própria origem: nada de CDN, fonte remota ou script externo.
+DEMO_CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; "
+            "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 ALERT_MESSAGES = {
     "green": "Nenhuma pessoa na zona de risco.",
     "yellow": "Atenção: pessoa próxima da zona de risco.",
@@ -69,6 +75,9 @@ app = FastAPI(
                  "zona poligonal. Protótipo educacional: não substitui sistemas de segurança certificados."),
     lifespan=lifespan,
 )
+
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.middleware("http")
@@ -132,6 +141,31 @@ def health(request: Request) -> HealthResponse:
     detector: PersonDetector = request.app.state.detector
     return HealthResponse(status="ok", model=detector.model_name, input_size=detector.input_size,
                           providers=detector.session.get_providers(), version=__version__)
+
+
+def _static_page(name: str) -> FileResponse:
+    """Serve uma página HTML estática da demonstração, com a mesma CSP restritiva e sem cache."""
+    return FileResponse(STATIC_DIR / name, media_type="text/html; charset=utf-8",
+                        headers={"Content-Security-Policy": DEMO_CSP, "Cache-Control": "no-store",
+                                 "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer"})
+
+
+@app.get("/demo", include_in_schema=False)
+def demo() -> FileResponse:
+    """Página HTML de demonstração (offline): envia imagem, ajusta limiar e zona e mostra JSON e PNG anotado."""
+    return _static_page("demo.html")
+
+
+@app.get("/demo/ajuda", include_in_schema=False)
+def demo_help() -> FileResponse:
+    """Guia de uso da simulação, para os estudantes."""
+    return _static_page("ajuda.html")
+
+
+@app.get("/demo/pipeline", include_in_schema=False)
+def demo_pipeline() -> FileResponse:
+    """Mapa dos requisitos da Parte 1 do teste contra o que foi implementado, com a evidência de cada item."""
+    return _static_page("pipeline.html")
 
 
 @app.get("/zone", response_model=ZoneConfig, tags=["serviço"])
