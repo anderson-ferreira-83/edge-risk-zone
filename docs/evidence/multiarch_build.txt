@@ -1,10 +1,19 @@
-# Evidência do build multi-arquitetura (gerada em 2026-11-05)
-# Código verificado: commit 01af512 (árvore limpa)
-# Comandos: scripts/build_multiarch.sh   e   docker buildx build --no-cache --platform linux/amd64,linux/arm64 --load .
+# Evidência do build multi-arquitetura e da execução emulada arm64 (gerada em 2026-11-05)
+# Código verificado: commit b881f08 (árvore limpa). Este arquivo é registrado em um commit posterior, só de documentação.
+# Comandos: docker buildx build --no-cache --platform linux/amd64,linux/arm64 -t edge-risk-zone:multi --load .
+#           scripts/verify_arch.py   e   scripts/arm64_smoke_test.sh
 # Host: x86_64, Ubuntu 24.04.2 LTS em WSL2 (kernel 5.15.167.4), Docker Engine 29.8.1 (armazenamento containerd), Buildx 0.37.1
-# Substitui a evidência anterior, gerada em 2026-11-04 no commit aa372cd (31 commits antes).
+# Substitui a evidência anterior, gerada em 2026-11-04 no commit aa372cd (35 commits antes).
 
-## 1) scripts/build_multiarch.sh (com cache de camadas): 55 s
+## 1) Build do zero (--no-cache) para as duas arquiteturas: 39 s
+O estágio de dependências baixou de novo as wheels de cada arquitetura alvo (pip --platform ... --only-binary=:all:).
+Se alguma dependência não tivesse wheel para ARM64, o build falharia. Wheels baixadas para linux/arm64:
+  onnxruntime-1.31.1-cp312-cp312-manylinux_2_28_aarch64.whl                 (21,4 MB)
+  numpy-2.5.4-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (15,7 MB)
+  pillow-13.0.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (6,5 MB)
+(O mesmo build, repetido em commits anteriores de hoje, com e sem cache, deu as mesmas contagens.)
+
+## 2) Arquitetura dos binários dentro da imagem (leitura do cabeçalho ELF)
 linux/amd64 -> linux/amd64
 edge-risk-zone:multi (linux/amd64): python3.12=x86-64; bibliotecas .so={'x86-64': 53}
 OK: todos os binários são x86-64
@@ -12,23 +21,19 @@ linux/arm64 -> linux/arm64
 edge-risk-zone:multi (linux/arm64): python3.12=AArch64; bibliotecas .so={'AArch64': 52}
 OK: todos os binários são AArch64
 
-linux/amd64  id=sha256:c482b29e596cfdaa8c0cea28690cf27c2eeee319581f7b7f9bf0ac1e1d294bc6  os/arch=linux/amd64
-linux/arm64  id=sha256:c7889079d8d119f0b512f83d36442e2bac53db2728eb10372c403faa9265a3ea  os/arch=linux/arm64
+linux/amd64  id=sha256:f7b1aad9351da1ede4947d79bb764cc15a7d8c992b8fa77fdc019c60d4380e04  os/arch=linux/amd64
+linux/arm64  id=sha256:612d7dfa40868bb960bcba0830950acdd56c70332528ddedb745f02885cdcd2a  os/arch=linux/arm64
 
-## 2) Build do zero (--no-cache): 43 s, mesmas verificações
-O estágio de dependências baixou de novo as wheels de cada arquitetura alvo (pip --platform ... --only-binary=:all:).
-Se alguma dependência não tivesse wheel para ARM64, o build falharia. Wheels baixadas para linux/arm64:
-  onnxruntime-1.31.1-cp312-cp312-manylinux_2_28_aarch64.whl                (21,4 MB)
-  numpy-2.5.4-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (15,7 MB)
-  pillow-13.0.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (6,5 MB)
-Resultado da verificação dos binários:
-  linux/amd64: python3.12=x86-64;  bibliotecas .so={'x86-64': 53}   OK
-  linux/arm64: python3.12=AArch64; bibliotecas .so={'AArch64': 52}  OK
+## 3) Execução da imagem arm64 EMULADA (QEMU), em host x86_64
+Pré-requisito (uma vez por boot): docker run --privileged --rm tonistiigi/binfmt --install arm64   (registrou qemu-aarch64)
+scripts/arm64_smoke_test.sh (container --platform linux/arm64):
+  uname -m dentro do container: aarch64
+  GET  /health        -> {"status":"ok","model":"yolox_tiny.onnx","input_size":416,"providers":["CPUExecutionProvider"],"version":"0.1.0"}
+  POST /detect        -> risco red; {'persons_total': 6, 'green': 3, 'yellow': 1, 'red': 2}   (igual ao resultado do container amd64)
+  POST /detect/image  -> HTTP 200, image/png (PNG válido 1280x1023), x-risk-level: red, x-persons: 6
+  Dentro do container: Python 3.12.16, onnxruntime 1.31.1 (wheel aarch64) com CPUExecutionProvider.
+  Tempo de inferência sob emulação: cerca de 7000 ms. NÃO é desempenho da Raspberry Pi 5: a emulação é muito mais lenta que a placa.
 
-## Limites (importante: construir e verificar não é executar)
-# NÃO provado por este arquivo: execução da imagem arm64 (QEMU ou Raspberry Pi 5).
-# Tentativa de execução emulada em 2026-11-05 neste host:
-#   docker run --rm --platform linux/arm64 --entrypoint python edge-risk-zone:multi -c "import platform; print(platform.machine())"
-#   -> exec /usr/local/bin/python: exec format error
-# Causa: o host não tem QEMU/binfmt registrado para arm64 (pré-requisito descrito em scripts/arm64_smoke_test.sh).
+## Limites (importante: emular não é executar na placa)
+# NÃO provado por este arquivo: execução na Raspberry Pi 5, desempenho e comportamento na CPU Cortex-A76 (a emulação é genérica).
 # O build é repetível, não bit a bit: a imagem-base python:3.12-slim e as dependências transitivas não estão travadas por digest ou hash.
