@@ -13,10 +13,17 @@ Zonas de Máquinas Pesadas"), com o escopo ajustado e declarado abaixo.
 > "comportamento". É um **protótipo educacional**, não um dispositivo de segurança certificado, e **não substitui
 > barreiras físicas, intertravamentos nem sistemas conformes à NR-12 / ISO 13849**. Veja [Limitações](#limitações).
 
+## Contexto educacional
+
+Este projeto é a entrega técnica da Parte 1 de um **curso presencial de IA Aplicada**. A demonstração local permite
+que a equipe e os alunos experimentem o pipeline sem alterar código: o [guia de uso](http://localhost:8000/demo/ajuda)
+propõe a atividade de calibração, enquanto o [mapa da Parte 1](http://localhost:8000/demo/pipeline) liga cada exigência
+à implementação e à evidência correspondente.
+
 ## Sumário
 
-1. [Como executar](#como-executar)
-2. [Endpoints](#endpoints) e [exemplos de requisição e resposta](#exemplos)
+1. [Contexto educacional](#contexto-educacional) e [como executar](#como-executar)
+2. [Endpoints](#endpoints), [exemplos](#exemplos) e [demonstração local](#demonstração-local-demo)
 3. [Como funciona](#como-funciona) e [regra de risco](#regra-de-risco)
 4. [Escolha do modelo](#escolha-do-modelo)
 5. [Docker e multi-arquitetura](#docker-e-multi-arquitetura) (o que está provado e o que não está)
@@ -34,6 +41,9 @@ docker compose up --build        # sobe a API em http://localhost:8000
 ```
 
 - Documentação interativa (Swagger): <http://localhost:8000/docs>
+- Demonstração visual: <http://localhost:8000/demo>
+- Guia dos alunos: <http://localhost:8000/demo/ajuda>
+- Mapa dos requisitos e evidências da Parte 1: <http://localhost:8000/demo/pipeline>
 - Parar: `docker compose down`
 - O `build` do Compose lista `linux/amd64` e `linux/arm64`. Em um Docker sem o armazenamento *containerd*, que não aceita várias plataformas de uma vez, comente a chave `platforms:` ou use `scripts/build_multiarch.sh`.
 
@@ -67,6 +77,7 @@ Para conferir a integridade: `scripts/download_model.sh`.
 | `POST /detect/image` | iguais | **PNG anotado** com zona, faixa de atenção, caixas, rótulos e risco geral |
 | `GET /health` | | Estado do serviço (usado no healthcheck do Docker) |
 | `GET /zone` | | Zona padrão carregada |
+| `GET /demo` | | Demonstração visual; as páginas de apoio ficam em `/demo/ajuda` e `/demo/pipeline` |
 
 A zona usa **coordenadas normalizadas** (0 a 1), então vale para qualquer resolução de câmera:
 `{"polygon": [[x, y], ...], "margin": 0.06}`, em que `margin` é a largura da faixa amarela como fração da diagonal da imagem.
@@ -114,6 +125,21 @@ Resposta real do exemplo 1 (resumida: 2 das 6 pessoas e o JSON de `zone` compact
 
 O PNG também traz os cabeçalhos `X-Risk-Level`, `X-Persons` e `X-Inference-Ms`.
 
+## Demonstração local (/demo)
+
+Página em HTML, CSS e JavaScript puros, servida pela própria API (`app/static/`), **sem CDN, framework, fonte
+remota ou armazenamento**: funciona dentro do container, sem internet. A resposta usa uma política de segurança
+de conteúdo restrita à própria origem.
+
+- escolha uma imagem JPEG/PNG, ajuste o **limiar** e edite a **zona** em JSON (`polygon` e `margin`, lida de `GET /zone`);
+- opcionalmente, desenhe o polígono por cliques na pré-visualização — o JSON continua sendo a fonte da verdade e a alternativa por teclado;
+- **Analisar** chama `POST /detect` e `POST /detect/image` e mostra risco, contagens, tabela de pessoas, tempos, PNG anotado e JSON, além do histórico textual da sessão;
+- erros 400, 413 e 422 do serviço viram mensagens em português; a interface tem navegação por teclado, foco visível e texto junto às cores;
+- `/demo/ajuda` conduz a atividade dos alunos e `/demo/pipeline` confronta os requisitos da Parte 1 com as evidências no repositório.
+
+O logotipo FIT em `app/static/logo-fit.png` é uma cópia sem alteração do arquivo fornecido; retire-o e remova sua
+referência em `demo.html` antes de publicar o repositório caso não haja autorização de uso da marca.
+
 ## Como funciona
 
 ```
@@ -147,17 +173,18 @@ A margem é proporcional à diagonal da imagem, para não depender da resoluçã
 
 | Modelo | Params | FLOPs | AP no COCO | Licença | Observação |
 |---|---:|---:|---:|---|---|
-| YOLOX-Nano | 0,91 M | 1,08 G (416) | 25,8 | Apache-2.0 | Mais leve; perde precisão em pessoas pequenas |
+| YOLOX-Nano | 0,91 M | 1,08 G (416) | 25,8 | Apache-2.0 | Mais leve; AP COCO menor |
 | **YOLOX-Tiny (escolhido)** | 5,06 M | 6,45 G (416) | 32,8 | Apache-2.0 | Equilíbrio entre latência e precisão |
-| SSDLite320 MobileNetV3 (torchvision) | 3,4 M | 0,58 G (320) | 21,3 | BSD (código) | Rápido, mas menos preciso; exige PyTorch na imagem |
-| YOLOv8n (Ultralytics) | 3,2 M | 8,7 G (640) | 37,3 | **AGPL-3.0** | Descartado: licença copyleft forte para um repositório público |
+| SSDLite320 MobileNetV3 (torchvision) | 3,4 M | 0,58 G (320) | 21,3 | BSD (código) | AP menor; referência em PyTorch, exportável |
+| YOLOv8n (Ultralytics) | 3,2 M | 8,7 G (640) | 37,3 | **AGPL-3.0** | AP maior; exige compatibilidade com as obrigações da AGPL |
 
 (Valores publicados pelos autores; não os reproduzi nesta máquina. O AP do COCO mede cenas gerais e **não** representa câmera elevada, fumaça ou capacete.)
 
 **Por quê.** A aplicação precisa de latência baixa em CPU (alertas em fração de segundo) e de boa recuperação de pessoas de tamanho médio.
 O Tiny leva cerca de 35 ms por quadro (28 ms só de inferência) em 4 núcleos do notebook (veja [Desempenho](#desempenho)), o que deixa margem para ser
 várias vezes mais lento na Pi e ainda atender a meta de latência. O Nano seria a alternativa se a medição na placa ficar acima do aceitável. Foi escolhido ONNX Runtime em vez de PyTorch porque
-a imagem fica menor e o ONNX é um formato portátil, com runtimes e conversores para várias plataformas.
+a imagem fica menor e o ONNX é um formato portátil, com runtimes e conversores para várias plataformas. A licença Apache-2.0 do YOLOX também preserva
+mais flexibilidade de integração; usar a distribuição AGPL-3.0 do Ultralytics exigiria tornar o projeto derivado compatível com suas obrigações ou obter licença empresarial.
 
 ## Docker e multi-arquitetura
 
@@ -177,7 +204,7 @@ O `docker-compose.yml` usa `restart: always`, executa o container com sistema de
 |---|---|
 | Build `linux/amd64` e `linux/arm64` em notebook x86_64 | OK (`docker buildx`, manifesto com as duas arquiteturas) |
 | Binários da imagem arm64 são AArch64 | OK: `scripts/verify_arch.py` leu o cabeçalho ELF do Python e de 52 bibliotecas `.so` (inclusive ONNX Runtime, NumPy, Pydantic e Pillow) |
-| Container amd64: endpoints, healthcheck, usuário não root, somente leitura | OK (`docs/evidence/multiarch_build.txt` guarda o log do build e os IDs das imagens) |
+| Container amd64: endpoints, healthcheck, usuário não root, somente leitura | OK ([execução no notebook](docs/evidence/notebook_execution_2026-11-04.md)) |
 | **Execução da imagem arm64** (emulada ou na placa) | **Não verificada.** `scripts/arm64_smoke_test.sh` faz o teste emulado; a validação na Pi 5 está descrita abaixo |
 
 ## Adaptações para a Raspberry Pi 5
@@ -188,11 +215,16 @@ Diferenças esperadas em relação ao ambiente de desenvolvimento e o que cada u
 |---|---|---|---|
 | Arquitetura | x86_64 | ARM64 (AArch64), 4 núcleos Cortex-A76 | Imagem `linux/arm64` (já gerada); wheels `aarch64` das dependências |
 | Aceleração | CPU | Sem NPU integrada; a GPU VideoCore não é usada pelo ONNX Runtime. Existem aceleradores opcionais (kits com Hailo), que este projeto **não** usa | Inferência 100% em CPU; `ORT_INTRA_THREADS=4` |
-| Desempenho | 28 a 35 ms (4 núcleos) | Esperado maior; **medir** | Trocar para YOLOX-Nano ou reexportar o modelo em resolução menor, se passar da meta |
+| Desempenho | 35 a 36 ms de total p50 (4 núcleos) | **Hipótese:** 140 a 280 ms de p50 do detector (4× a 8× mais lento); **medir** | Comparar p95 com a meta de 250 ms; trocar para YOLOX-Nano ou reexportar em resolução menor se necessário |
 | Memória | ~127 MiB no container | Cabe com folga | Manter um processo e um worker |
 | Térmica | Sem restrições | Pode reduzir a frequência sob carga contínua | Dissipador/ventilação; monitorar `vcgencmd measure_temp` e `vcgencmd get_throttled` |
 | Entrada | Upload de arquivo | Câmera (CSI/USB) | Não incluído: um laço de captura (Picamera2/V4L2) chamaria a mesma função `detect` |
 | Alertas | Campo `alert` no JSON | GPIO, buzzer, MQTT | Próximo passo; o contrato JSON já traz o necessário |
+
+**Estimativa comparativa, não benchmark.** Aplicar um fator hipotético de 4× a 8× aos cerca de 35 ms de total
+p50 medidos no detector do notebook produz **140 a 280 ms por quadro** na Pi 5. O intervalo cruza a meta de 250 ms,
+portanto não permite afirmar antecipadamente que a placa atende ao objetivo. Ele também não inclui captura de câmera,
+transporte HTTP nem a codificação do PNG; somente o benchmark na placa, incluindo p95 e carga contínua, confirma o desempenho.
 
 **Otimizações de inferência** (não aplicadas nesta versão; é onde o ganho está):
 
@@ -237,7 +269,7 @@ Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detec
 
   ![Falso negativo: pessoa na zona não detectada](docs/assets/limite_assembly.png)
 
-  Contagem de pessoas detectadas e risco geral variando o limiar de confiança (sem gabarito manual, então não sei quantas detecções adicionais são falsas):
+  Contagem de pessoas detectadas e risco geral variando o limiar de confiança (sem gabarito manual, exceto onde indicado abaixo):
 
   | Limiar | `assembly` | `airplane` | `factory1910` |
   |---:|---|---|---|
@@ -246,7 +278,11 @@ Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detec
   | 0,25 | 3, amarelo | 7, vermelho | 9, vermelho |
   | 0,10 | 4, **vermelho** | 10, vermelho | 13, vermelho |
 
-  Limiar baixo recupera mais pessoas, mas aumenta alarmes falsos. Em segurança, o custo de perder uma pessoa é maior que o de um alarme falso, então a escolha do limiar deve vir de medições no ambiente real.
+  **Em `assembly`, baixar o limiar não recupera a pessoa da zona.** O vermelho de 0,10 vem de uma caixa de 13%
+  sobre o equipamento à direita (falso positivo, sem relação com a pessoa). A mulher só é detectada perto de 0,05,
+  junto com outras 11 detecções, quase todas falsas. O falso negativo foi trocado por alarmes falsos, não resolvido.
+
+  Em geral, limiar baixo recupera mais pessoas, mas aumenta alarmes falsos. Em segurança, o custo de perder uma pessoa é maior que o de um alarme falso, então a escolha do limiar deve vir de medições no ambiente real.
 - **Imagens de demonstração são históricas** (domínio público): preto e branco, sem EPI moderno. Não representam uma planta atual.
 - **Câmera e zona.** Se a câmera mudar de posição, o polígono perde o sentido. A zona está no plano da imagem; a perspectiva distorce distâncias, e o "pé" é uma aproximação.
 - **Condições adversas** (fumaça, contraluz, oclusão, câmera muito elevada) pioram a detecção e não foram avaliadas quantitativamente.
@@ -257,17 +293,18 @@ Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detec
 ## Testes, estrutura e licenças
 
 ```bash
-pip install -r requirements-dev.txt && pytest        # 49 testes: geometria, detector, regra de risco e API
+pip install -r requirements-dev.txt && pytest        # 93 testes: geometria, detector, regra de risco, API e páginas da demo
 ```
 
 ```
 app/         config, geometry (zona), detector (YOLOX + ONNX), risk (regra), render (PNG), schemas, main (FastAPI)
+app/static/  demo, guia dos alunos, mapa da Parte 1, estilos, JavaScript e logotipo (funcionamento offline)
 config/      zone.json (zona padrão, editável sem reconstruir a imagem)
 models/      yolox_tiny.onnx + origem, checksum e licença
 samples/     fotos de demonstração (domínio público) e créditos
 scripts/     benchmark, build multi-arquitetura, verificação ELF, teste arm64 emulado, download do modelo
-tests/       49 testes (pytest), incluindo regressões de recorte de caixas, limites de upload e concorrência
-docs/        benchmark e imagens
+tests/       93 testes (pytest), incluindo regressões de recorte de caixas, limites de upload, concorrência e páginas da demo
+docs/        benchmarks, imagens e evidências de execução
 ```
 
 Código sob licença MIT (`LICENSE`). Modelo, dados e bibliotecas de terceiros em `THIRD_PARTY_NOTICES.md`.
