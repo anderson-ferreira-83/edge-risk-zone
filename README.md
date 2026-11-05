@@ -36,6 +36,13 @@ Se o comando falhar por causa de `platforms:` (Docker sem o armazenamento *conta
 
 ![Exemplo: 6 pessoas, 2 em zona vermelha, 1 em amarela, 3 em verde](docs/assets/exemplo_anotado.png)
 
+### Ambiente testado e sistema operacional
+
+- **Imagens:** sempre Linux (`linux/amd64` e `linux/arm64`). No Windows e no macOS, o Docker executa os containers dentro de uma máquina virtual Linux (WSL2 ou equivalente); não existe imagem Windows.
+- **Onde foi validado:** Ubuntu 24.04 em WSL2 (kernel 5.15), Docker Engine 29.8.1, Buildx 0.37.1, CPU x86_64. Não houve execução na Raspberry Pi 5.
+- **Comandos deste README:** shell Linux ou macOS (bash). No Windows PowerShell 5.1, `curl` é outro comando: use `curl.exe` e passe a zona por arquivo (`-F "zone=<zona.json"`).
+- **Raspberry Pi 5:** use um sistema de 64 bits (por exemplo, Raspberry Pi OS 64 bits); `uname -m` deve mostrar `aarch64`.
+
 ## Projeto escolhido: ID 3 da matriz
 
 O teste oferecia cinco projetos. Este é o **ID 3** ("Monitoramento de Comportamento de Risco em Zonas de Máquinas Pesadas"), com escopo ajustado e declarado:
@@ -203,6 +210,9 @@ O Tiny leva cerca de 35 ms por quadro (28 ms só de inferência) em 4 núcleos d
 várias vezes mais lento na Pi e ainda atender a meta de latência. O Nano seria a alternativa se a medição na placa ficar acima do aceitável. Foi escolhido ONNX Runtime em vez de PyTorch porque
 a imagem fica menor e o ONNX é um formato portátil, com runtimes e conversores para várias plataformas. A licença Apache-2.0 do YOLOX também preserva
 mais flexibilidade de integração; usar a distribuição AGPL-3.0 do Ultralytics exigiria tornar o projeto derivado compatível com suas obrigações ou obter licença empresarial.
+
+O cenário pede duas coisas: **latência de ponta a ponta de até 250 ms por quadro** (hipótese, veja [Meta de latência](#meta-de-latência-hipótese-a-validar)) e **não perder pessoas** (o falso negativo é o erro mais caro, veja [Limitações](#limitações)).
+O Tiny usa cerca de 35 ms no notebook, sete vezes menos que a meta, o que deixa folga para a Pi 5 (hipótese: 140 a 280 ms); a revocação em pessoas pequenas e ocultas não foi medida e é o ponto fraco.
 
 ## Docker e multi-arquitetura
 
