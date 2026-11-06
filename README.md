@@ -201,10 +201,29 @@ sua referência em `demo.html`. Veja [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTI
 
 ## Como funciona
 
-```
-imagem ─► [pré-processamento] ─► [inferência ONNX] ─► [pós-processamento] ─► [regra de risco] ─► JSON / PNG
-          letterbox 416x416       YOLOX-Tiny (CPU)     decodifica a cabeça    ponto do pé x zona
-          BGR, float32 0-255      saída [1, 3549, 85]  classe pessoa + NMS    verde/amarelo/vermelho
+```mermaid
+flowchart LR
+    A["Imagem<br/>JPEG ou PNG"]
+    B["1 · Pré-processar<br/>letterbox 416 × 416<br/>BGR · float32 · 0–255"]
+    C["2 · Inferir<br/>YOLOX-Tiny · CPU<br/>saída 1 × 3549 × 85"]
+    D["3 · Pós-processar<br/>decodificar · filtrar pessoa<br/>NMS"]
+    E["4 · Classificar o risco<br/>ponto do pé × zona<br/>verde · amarelo · vermelho"]
+    F["JSON<br/>dados estruturados"]
+    G["PNG<br/>imagem anotada"]
+
+    A --> B --> C --> D --> E
+    E --> F
+    E --> G
+
+    classDef source fill:#EEF3F8,stroke:#5B6B80,color:#000532,stroke-width:2px;
+    classDef process fill:#D9F0FB,stroke:#009ADD,color:#000532,stroke-width:2px;
+    classDef risk fill:#FFF6D6,stroke:#C18A00,color:#000532,stroke-width:2px;
+    classDef output fill:#E7F5EC,stroke:#00A326,color:#000532,stroke-width:2px;
+    class A source;
+    class B,C,D process;
+    class E risk;
+    class F,G output;
+    linkStyle default stroke:#5B6B80,stroke-width:2px;
 ```
 
 1. **Pré-processamento** (`app/detector.py`): redimensiona mantendo a proporção, preenche com cinza (114) e usa canais BGR, como no treino do modelo.
