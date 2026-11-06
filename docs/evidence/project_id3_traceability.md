@@ -22,12 +22,12 @@ Legenda: **Atendido** · **Parcial** · **Adaptado** (escopo ajustado e declarad
 | # | A matriz pede | O que este repositório faz | Evidência | Situação |
 |---:|---|---|---|---|
 | 1 | "delimitar virtualmente a zona de risco via configuração de polígono na imagem" | Polígono em coordenadas normalizadas, configurável por arquivo (`ZONE_PATH`, `config/zone.json`), por requisição (campo `zone`) e por cliques em `/demo` | [`app/config.py`](../../app/config.py), `GET /zone`, [`tests/test_geometry.py`](../../tests/test_geometry.py) | **Atendido** |
-| 2 | "detectar a presença de pessoas nessa região" | YOLOX-Tiny (COCO) detecta pessoas; o ponto de contato com o piso é testado contra o polígono | [`app/detector.py`](../../app/detector.py), [`app/risk.py`](../../app/risk.py), [`tests/test_risk.py`](../../tests/test_risk.py) | **Atendido**, com um falso negativo documentado em `samples/assembly.jpg` (veja [Limitações](../../README.md#limitações)) |
+| 2 | "detectar a presença de pessoas nessa região" | YOLOX-Tiny (COCO) detecta pessoas; o ponto de contato com o piso é testado contra o polígono | [`app/detector.py`](../../app/detector.py), [`app/risk.py`](../../app/risk.py), [`tests/test_risk.py`](../../tests/test_risk.py) | **Atendido**, com um falso negativo documentado em `samples/bomber.jpg` (veja [Limitações](../../README.md#limitações)) |
 | 3 | "classificar o risco (zona amarela/vermelha)" | Verde, amarelo (margem como fração da diagonal) e vermelho (dentro da zona); risco geral é o pior entre as pessoas | `classify_person` e `overall_level` em [`app/risk.py`](../../app/risk.py) | **Atendido** |
 | 4 | "acionar alertas proporcionais ao nível de perigo" | Alerta informativo: campo `alert` no JSON, cabeçalho `X-Risk-Level`, PNG anotado e tela de `/demo` | `POST /detect`, `POST /detect/image` | **Parcial**: não há acionamento físico (MQTT, GPIO, buzzer) |
 | 5 | "em tempo real" e monitoramento contínuo | Uma imagem por requisição; a latência de cada etapa é medida e informada | [`docs/benchmark_notebook.md`](../benchmark_notebook.md), [`docs/benchmark_api_container.json`](../benchmark_api_container.json) | **Parcial** (escopo adaptado e declarado): não há laço de câmera nem confirmação em vários quadros |
 | 6 | "comportamentos de risco" | Detecta **presença em uma região**; não interpreta comportamento | README, aviso de escopo e [Limitações](../../README.md#limitações) | **Adaptado** |
-| 7 | "Múltiplas pessoas em cena" | Cada pessoa recebe seu próprio nível | [`samples/airplane.jpg`](../../samples/airplane.jpg), [`samples/factory1910.jpg`](../../samples/factory1910.jpg) | **Atendido** |
+| 7 | "Múltiplas pessoas em cena" | Cada pessoa recebe seu próprio nível | [`samples/drill_press.jpg`](../../samples/drill_press.jpg), [`samples/factory1910.jpg`](../../samples/factory1910.jpg) | **Atendido** |
 | 8 | Ambiente: "posição elevada (3-5 metros)", "fumaça ou névoa", "variação de iluminação" | As imagens de exemplo são históricas, em preto e branco; nada foi medido nessas condições | [Limitações](../../README.md#limitações) | **Não validado** |
 | 9a | "na Raspberry Pi 5": compatibilidade da imagem | Imagem `linux/arm64` gerada com `buildx`; todos os binários lidos como AArch64 | [`scripts/verify_arch.py`](../../scripts/verify_arch.py), [`docs/evidence/multiarch_build.txt`](multiarch_build.txt) | **Atendido** |
 | 9b | "na Raspberry Pi 5": execução e latência | Não houve execução na placa (houve execução emulada em x86_64, que não mede desempenho); o intervalo de 140 a 280 ms é **hipótese** | README, [Adaptações para a Raspberry Pi 5](../../README.md#adaptações-para-a-raspberry-pi-5) | **Não validado** |
@@ -42,7 +42,7 @@ A escolha busca o melhor equilíbrio entre quatro fatores, e não afirma que os 
   O ID 4 (veículos) também seria viável com classes do COCO.
 - **Engenharia própria:** o valor do projeto está na regra de risco (polígono, margem, ponto do pé) e na API, que são testáveis.
 - **Prazo:** uma imagem por requisição e uma regra geométrica cabem no prazo do teste.
-- **Discussão pedagógica:** o tema de segurança expõe a assimetria entre os erros (falso negativo contra falso alarme), que o caso de `assembly` mostra com dados reais.
+- **Discussão pedagógica:** o tema de segurança expõe a assimetria entre os erros (falso negativo contra alarme falso, o falso positivo operacional), que o caso de `bomber` mostra com dados reais.
 
 ## O que ficou de fora, em uma frase
 

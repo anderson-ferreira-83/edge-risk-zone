@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "migrated_at": "2026-11-05",
+  "reason": "Os nomes atuais descrevem o conteúdo visível das cenas e evitam ambiguidade didática.",
+  "files": [
+    {
+      "source_filename_original": "assembly.jpg",
+      "source_filename_current": "bomber.jpg",
+      "source_sha256": "415a35a06e2ecc0fe3eb2b024fdd489de3022662441323814fe4df5b462e5e85",
+      "description": "Montagem de um bombardeiro A-20"
+    },
+    {
+      "source_filename_original": "airplane.jpg",
+      "source_filename_current": "drill_press.jpg",
+      "source_sha256": "761b3fbb1ba59e741704f694abbf07df969489962cf1f688a9471278aa561624",
+      "description": "Operadoras de furadeiras de coluna em uma fábrica aeronáutica"
+    }
+  ],
+  "historical_evidence_policy": "Registros de execução e JSONs de benchmark anteriores permanecem byte a byte inalterados; use este mapa para reproduzi-los com os nomes atuais."
+}

@@ -125,13 +125,13 @@ Erros: `400` (arquivo vazio ou que não é imagem), `413` (arquivo grande demais
 
 ```bash
 # 1) JSON com as detecções
-curl -s -X POST -F "file=@samples/airplane.jpg" http://localhost:8000/detect
+curl -s -X POST -F "file=@samples/drill_press.jpg" http://localhost:8000/detect
 
 # 2) PNG anotado
-curl -s -X POST -F "file=@samples/airplane.jpg" http://localhost:8000/detect/image -o anotada.png
+curl -s -X POST -F "file=@samples/drill_press.jpg" http://localhost:8000/detect/image -o anotada.png
 
 # 3) Zona própria e limiar mais sensível
-curl -s -X POST -F "file=@samples/airplane.jpg" \
+curl -s -X POST -F "file=@samples/drill_press.jpg" \
   -F 'zone={"polygon":[[0.3,0.45],[0.98,0.45],[0.98,0.98],[0.3,0.98]],"margin":0.06}' \
   -F conf=0.25 http://localhost:8000/detect
 ```
@@ -332,20 +332,20 @@ Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detec
 ## Limitações
 
 - **Detecção de presença, não de comportamento.** A pessoa na zona é um *indício* de risco, não a análise do que ela faz.
-- **O detector erra, e o erro mais perigoso é o falso negativo.** Em `samples/assembly.jpg` há uma pessoa em pé dentro da zona vermelha, parcialmente oculta pela estrutura, que o detector não encontra com o limiar padrão, e a cena sai como "verde":
+- **O detector erra, e o erro mais perigoso é o falso negativo.** Em `samples/bomber.jpg` há uma pessoa em pé dentro da zona vermelha, parcialmente oculta pela estrutura, que o detector não encontra com o limiar padrão, e a cena sai como "verde":
 
-  ![Falso negativo: pessoa na zona não detectada](docs/assets/limite_assembly.png)
+  ![Falso negativo: pessoa na zona não detectada](docs/assets/limite_bomber.png)
 
   Contagem de pessoas detectadas e risco geral variando o limiar de confiança (sem gabarito manual, exceto onde indicado abaixo):
 
-  | Limiar | `assembly` | `airplane` | `factory1910` |
+  | Limiar | `bomber` | `drill_press` | `factory1910` |
   |---:|---|---|---|
   | 0,50 | 0 pessoas, verde | 6, vermelho | 6, vermelho |
   | **0,35 (padrão)** | **1, verde** | **6, vermelho** | **6, vermelho** |
   | 0,25 | 3, amarelo | 7, vermelho | 9, vermelho |
   | 0,10 | 4, **vermelho** | 10, vermelho | 13, vermelho |
 
-  **Em `assembly`, baixar o limiar não recupera a pessoa da zona.** O vermelho de 0,10 vem de uma caixa de 13%
+  **Em `bomber`, baixar o limiar não recupera a pessoa da zona.** O vermelho de 0,10 vem de uma caixa de 13%
   sobre o equipamento à direita (falso positivo, sem relação com a pessoa). A mulher só é detectada perto de 0,05,
   junto com outras 11 detecções, quase todas falsas. O falso negativo foi trocado por alarmes falsos, não resolvido.
 

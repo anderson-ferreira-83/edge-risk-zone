@@ -11,7 +11,7 @@ from PIL import Image
 from app.detector import PersonDetector
 
 MODEL = Path(__file__).resolve().parent.parent / "models" / "yolox_tiny.onnx"
-SAMPLE = Path(__file__).resolve().parent.parent / "samples" / "airplane.jpg"
+SAMPLE = Path(__file__).resolve().parent.parent / "samples" / "drill_press.jpg"
 
 
 def test_input_size_must_match_the_fixed_onnx_input():

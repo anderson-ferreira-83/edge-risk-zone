@@ -40,7 +40,7 @@
     <h2 id="antes">Antes de começar</h2>
     <ul>
       <li>O serviço precisa estar rodando no seu computador: <code>docker compose up</code> na pasta do projeto. Depois abra <code>http://localhost:8000/demo</code>.</li>
-      <li>As fotos de exemplo estão na pasta <code>samples/</code> do projeto: <code>assembly.jpg</code>, <code>airplane.jpg</code> e <code>factory1910.jpg</code>. São fotos históricas, de domínio público.</li>
+      <li>As fotos de exemplo estão na pasta <code>samples/</code> do projeto: <code>bomber.jpg</code>, <code>drill_press.jpg</code> e <code>factory1910.jpg</code>. São fotos históricas, de domínio público.</li>
       <li>Tudo acontece no seu computador. A imagem não é gravada nem enviada para a internet.</li>
     </ul>
 
@@ -49,7 +49,7 @@
       <li>
         <div>
           <span class="step-title">Escolha uma foto</span>
-          <p>No cartão <strong>1. Entrada</strong>, use <span class="ui">Imagem (JPEG ou PNG)</span> e selecione <code>samples/assembly.jpg</code>. A foto aparece na pré-visualização com a zona de risco pintada de vermelho.</p>
+          <p>No cartão <strong>1. Entrada</strong>, use <span class="ui">Imagem (JPEG ou PNG)</span> e selecione <code>samples/bomber.jpg</code>. A foto aparece na pré-visualização com a zona de risco pintada de vermelho.</p>
         </div>
       </li>
       <li>
@@ -120,7 +120,7 @@
     <h2 id="desafio">Desafio da aula: calibre a zona</h2>
     <p><strong>Critério de sucesso:</strong> nenhuma pessoa perdida dentro da zona, com no máximo <strong>1 alarme falso por cena</strong>.</p>
     <ol>
-      <li>Para cada uma das três cenas (<code>assembly</code>, <code>airplane</code>, <code>factory1910</code>), analise com o limiar <strong>0,35</strong>.</li>
+      <li>Para cada uma das três cenas (<code>bomber</code>, <code>drill_press</code>, <code>factory1910</code>), analise com o limiar <strong>0,35</strong>.</li>
       <li>Olhe a foto e conte, a olho, quantas pessoas estão dentro da zona vermelha. Compare com o que o sistema encontrou.</li>
       <li>Teste também <strong>0,25</strong> e <strong>0,10</strong>. Anote na ficha de calibração: pessoas perdidas e alarmes falsos em cada limiar.</li>
       <li>Decida qual limiar usar e explique em um minuto: <strong>qual erro vocês aceitam e por quê?</strong></li>

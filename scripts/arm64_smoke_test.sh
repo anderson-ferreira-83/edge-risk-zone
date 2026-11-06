@@ -17,5 +17,5 @@ echo "Aguardando a API (a emulação pode levar 1 a 3 minutos)..."
 for _ in $(seq 1 180); do curl -sf http://127.0.0.1:18002/health >/dev/null && break; sleep 2; done
 echo "uname -m dentro do container: $(docker exec "$NAME" python -c 'import platform; print(platform.machine())')"
 curl -s http://127.0.0.1:18002/health; echo
-curl -s -X POST -F "file=@samples/airplane.jpg" http://127.0.0.1:18002/detect \
+curl -s -X POST -F "file=@samples/drill_press.jpg" http://127.0.0.1:18002/detect \
   | python3 -c "import sys,json; j=json.load(sys.stdin); print('detect:', j['risk_level'], j['summary'], 'inferência (emulada):', j['metadata']['timings']['inference_ms'], 'ms')"

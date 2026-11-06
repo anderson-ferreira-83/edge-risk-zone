@@ -11,7 +11,7 @@ from PIL import Image
 import app.main as main
 from app.config import Settings
 
-SAMPLE = Path(__file__).resolve().parent.parent / "samples" / "airplane.jpg"
+SAMPLE = Path(__file__).resolve().parent.parent / "samples" / "drill_press.jpg"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -23,7 +23,7 @@ def client():
 
 def post_sample(client, endpoint="/detect", **data):
     with open(SAMPLE, "rb") as handle:
-        return client.post(endpoint, files={"file": ("airplane.jpg", handle, "image/jpeg")}, data=data)
+        return client.post(endpoint, files={"file": ("drill_press.jpg", handle, "image/jpeg")}, data=data)
 
 
 def test_health(client):

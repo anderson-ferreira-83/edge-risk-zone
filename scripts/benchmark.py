@@ -91,7 +91,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--threads", type=int, nargs="+", default=[0],
                         help="valores de intra_op_num_threads (0 = padrão)")
-    parser.add_argument("--images", nargs="+", default=["samples/airplane.jpg"])
+    parser.add_argument("--images", nargs="+", default=["samples/drill_press.jpg"])
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--runs", type=int, default=100)
     parser.add_argument("--json", type=Path, help="salva o resultado completo neste arquivo")

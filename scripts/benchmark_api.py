@@ -75,7 +75,7 @@ def main() -> None:
     """Mede `/detect` e `/detect/image` no serviço em execução e imprime o resultado em JSON."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default="http://127.0.0.1:8000")
-    parser.add_argument("--image", default="samples/airplane.jpg")
+    parser.add_argument("--image", default="samples/drill_press.jpg")
     parser.add_argument("--container", help="nome do container, para registrar a memória")
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--runs", type=int, default=60)
