@@ -181,7 +181,7 @@ O PNG traz os cabeçalhos `X-Risk-Level`, `X-Persons` e `X-Inference-Ms`.
 
 - **Ao vivo:** `docker compose up --build` e, em seguida, o Swagger em `/docs` e a demonstração em `/demo`. Os dois endpoints obrigatórios são `POST /detect` (JSON) e `POST /detect/image` (PNG anotado).
 - **Registros de execução:** [container amd64 no notebook](docs/evidence/notebook_execution_2026-11-04.md) e [build multi-arquitetura e execução emulada arm64](docs/evidence/multiarch_build.txt).
-- **Testes automáticos:** `pytest` (103) e `node tests/demo_logic.test.mjs` (8); veja [Testes](#testes-estrutura-e-licenças).
+- **Testes automáticos:** `pytest` (104) e `node tests/demo_logic.test.mjs` (8); veja [Testes](#testes-estrutura-e-licenças).
 
 ## Demonstração local (/demo)
 
@@ -381,7 +381,7 @@ Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detec
 ## Testes, estrutura e licenças
 
 ```bash
-pip install -r requirements-dev.txt && pytest        # 103 testes; 1 é ignorado se o Node não estiver instalado
+pip install -r requirements-dev.txt && pytest        # 104 testes; 1 é ignorado se o Node não estiver instalado
 node tests/demo_logic.test.mjs                       # 8 testes da lógica JavaScript da demo
 ruff check . && mypy app scripts                     # lint e tipos (configuração em pyproject.toml)
 ```
@@ -393,7 +393,7 @@ config/      zone.json (zona padrão, editável sem reconstruir a imagem)
 models/      yolox_tiny.onnx + origem, checksum e licença
 samples/     fotos de demonstração (domínio público) e créditos
 scripts/     benchmark, build multi-arquitetura, verificação ELF, teste arm64 emulado, download do modelo
-tests/       103 testes (pytest) + 8 testes Node, incluindo detector, API, concorrência e estado da demo
+tests/       104 testes (pytest) + 8 testes Node, incluindo detector, API, concorrência e estado da demo
 docs/        benchmarks, imagens e evidências de execução
 ```
 

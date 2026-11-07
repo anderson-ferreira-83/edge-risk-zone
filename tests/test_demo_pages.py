@@ -39,17 +39,24 @@ def test_pages_are_not_in_openapi_schema(client, path):
     assert path not in client.get("/openapi.json").json()["paths"]
 
 
-def test_demo_links_to_both_pages(client):
+def test_demo_links_to_all_pages(client):
     html = client.get("/demo").text
-    assert 'href="/demo/ajuda"' in html and 'href="/demo/pipeline"' in html
+    for target in ("/demo", "/demo/ajuda", "/demo/pipeline", "/docs#/"):
+        assert f'href="{target}"' in html
     assert "/static/pages.css" in html
 
 
 @pytest.mark.parametrize("path", PAGES)
 def test_pages_link_back_to_demo_and_to_each_other(client, path):
     html = client.get(path).text
-    for target in ("/demo", "/demo/ajuda", "/demo/pipeline"):
+    for target in ("/demo", "/demo/ajuda", "/demo/pipeline", "/docs#/"):
         assert f'href="{target}"' in html, (path, target)
+
+
+def test_swagger_description_links_back_to_the_three_pages(client):
+    description = client.get("/openapi.json").json()["info"]["description"]
+    for target in ("/demo", "/demo/ajuda", "/demo/pipeline"):
+        assert f"]({target})" in description
 
 
 @pytest.mark.parametrize("path", PAGES)

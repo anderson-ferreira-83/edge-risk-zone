@@ -95,7 +95,9 @@ app = FastAPI(
     title="Edge Risk Zone",
     version=__version__,
     description=("Detecta pessoas com YOLOX-Tiny (ONNX Runtime, CPU) e classifica o risco em relação a uma "
-                 "zona poligonal. Protótipo educacional: não substitui sistemas de segurança certificados."),
+                 "zona poligonal. Protótipo educacional: não substitui sistemas de segurança certificados.\n\n"
+                 "**Navegação:** [Simulação](/demo) · [Como usar](/demo/ajuda) · "
+                 "[Pipeline da Parte 1](/demo/pipeline)"),
     lifespan=lifespan,
 )
 
