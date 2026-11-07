@@ -5,7 +5,7 @@
 
 Uso: python scripts/benchmark_api.py --url http://127.0.0.1:18001 --container erz-bench \
      --json docs/benchmark_api_container.json
-Requer httpx (requirements-dev.txt). Registra p50/p95/média de /detect e /detect/image,
+Requer HTTPX2 (requirements-dev.txt). Registra p50/p95/média de /detect e /detect/image,
 a memória do container (docker stats) e o custo/tamanho do PNG em cada nível de compressão.
 
 A latência inclui rede local, envio do arquivo (multipart), detecção e resposta, então é maior que a de
@@ -22,7 +22,7 @@ import sys
 import time
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
