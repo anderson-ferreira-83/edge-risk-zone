@@ -67,11 +67,30 @@ function summarize(conf, data) {
   return "limiar " + formatConf(conf) + ": " + n + (n === 1 ? " pessoa" : " pessoas") + ", risco " + LEVELS[data.risk_level].label;
 }
 
-/** Converte coordenadas de clique (em pixels do elemento) em ponto normalizado de 0 a 1, com 3 casas. */
-function clickToNormalized(clientX, clientY, rect) {
-  const clamp = (v) => Math.min(1, Math.max(0, v));
-  const round = (v) => Math.round(v * 1000) / 1000;
-  return [round(clamp((clientX - rect.left) / rect.width)), round(clamp((clientY - rect.top) / rect.height))];
+/** Constrói uma zona retangular a partir de percentuais inteiros (0 a 100); null se a ordem for inválida. */
+function zoneFromRectPercent(left, top, right, bottom, margin) {
+  const values = [left, top, right, bottom, margin].map(Number);
+  if (!values.every(Number.isFinite)) return null;
+  [left, top, right, bottom, margin] = values;
+  if (left < 0 || top < 0 || right > 100 || bottom > 100 || margin < 0 || margin > 50 || left >= right || top >= bottom) return null;
+  const norm = (value) => Math.round(value * 10) / 1000;
+  return { polygon: [[norm(left), norm(top)], [norm(right), norm(top)], [norm(right), norm(bottom)], [norm(left), norm(bottom)]],
+           margin: norm(margin) };
+}
+
+/** Devolve o retângulo envolvente da zona em percentuais e informa se o polígono já era esse retângulo. */
+function rectPercentFromZone(zone) {
+  if (!zone || !Array.isArray(zone.polygon) || zone.polygon.length < 3) return null;
+  const xs = zone.polygon.map((p) => p[0]);
+  const ys = zone.polygon.map((p) => p[1]);
+  if (![...xs, ...ys].every((v) => Number.isFinite(v))) return null;
+  const left = Math.min(...xs), right = Math.max(...xs), top = Math.min(...ys), bottom = Math.max(...ys);
+  const corners = [[left, top], [right, top], [right, bottom], [left, bottom]];
+  const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-9 && Math.abs(a[1] - b[1]) < 1e-9;
+  const isRectangle = zone.polygon.length === 4 && corners.every((corner) => zone.polygon.some((point) => same(point, corner)));
+  const pct = (value) => Math.round(value * 100);
+  return { left: pct(left), top: pct(top), right: pct(right), bottom: pct(bottom),
+           margin: pct(zone.margin === undefined ? FALLBACK_ZONE.margin : zone.margin), isRectangle };
 }
 
 /** Forma canônica da zona (sem espaços nem campos extras); se o JSON for inválido, o texto compactado. */
@@ -92,15 +111,9 @@ function freshnessOf(currentKey, lastAnalyzedKey) {
   return currentKey === lastAnalyzedKey ? "fresh" : "stale";
 }
 
-/** Motivo, em texto, para Analisar estar bloqueado pelo desenho; null quando o desenho não bloqueia. */
-function analyzeBlockReason({ hasImage, drawing }) {
-  if (hasImage && drawing) return "Analisar fica bloqueado enquanto o modo de desenho está ligado. Para continuar, clique de novo em \"Desenhar polígono no preview\".";
-  return null;
-}
-
 if (typeof module !== "undefined") {
-  module.exports = { formatConf, parseConf, parseZoneText, zoneToText, httpErrorMessage, summarize, clickToNormalized,
-                     canonicalZone, analysisKey, freshnessOf, analyzeBlockReason };
+  module.exports = { formatConf, parseConf, parseZoneText, zoneToText, httpErrorMessage, summarize,
+                     zoneFromRectPercent, rectPercentFromZone, canonicalZone, analysisKey, freshnessOf };
 }
 
 /* ---------- Interface (somente no navegador) ---------- */
@@ -110,7 +123,10 @@ if (typeof document !== "undefined") {
     file: $("file"), preview: $("preview"), previewEmpty: $("preview-empty"),
     range: $("conf-range"), number: $("conf-number"), confText: $("conf-text"),
     zoneJson: $("zone-json"), zoneError: $("zone-error"), zoneReset: $("zone-reset"),
-    drawToggle: $("draw-toggle"), drawUndo: $("draw-undo"),
+    zoneLeft: $("zone-left"), zoneRight: $("zone-right"), zoneTop: $("zone-top"), zoneBottom: $("zone-bottom"),
+    zoneMargin: $("zone-margin"), zoneLeftOut: $("zone-left-out"), zoneRightOut: $("zone-right-out"),
+    zoneTopOut: $("zone-top-out"), zoneBottomOut: $("zone-bottom-out"), zoneMarginOut: $("zone-margin-out"),
+    zoneSliderNote: $("zone-slider-note"),
     analyze: $("analyze"), status: $("status"), error: $("error"),
     serviceStatus: $("service-status"), resultSection: $("resultado"),
     resultEmpty: $("result-empty"), result: $("result"),
@@ -118,9 +134,10 @@ if (typeof document !== "undefined") {
     nTotal: $("n-total"), nGreen: $("n-green"), nYellow: $("n-yellow"), nRed: $("n-red"),
     annotated: $("annotated"), personsBody: $("persons-body"), personsNone: $("persons-none"),
     timings: $("timings"), jsonOut: $("json-out"), historyWrap: $("history-wrap"), history: $("history"),
-    freshness: $("freshness"), freshnessIcon: $("freshness-icon"), freshnessText: $("freshness-text"), analyzeReason: $("analyze-reason"),
+    freshness: $("freshness"), freshnessIcon: $("freshness-icon"), freshnessText: $("freshness-text"),
+    diagnosisDetails: $("diagnosis-details"), technicalDetails: $("technical-details"), revealState: $("reveal-state"),
   };
-  const state = { file: null, imageUrl: null, image: null, defaultZone: null, annotatedUrl: null, drawing: false, busy: false,
+  const state = { file: null, imageUrl: null, image: null, defaultZone: null, annotatedUrl: null, busy: false,
                   fileToken: 0, lastAnalyzedKey: null };
 
   function currentConf() { return parseConf(el.number.value); }
@@ -130,7 +147,17 @@ if (typeof document !== "undefined") {
     el.range.value = String(v);
     el.number.value = String(v);
     el.confText.textContent = formatConf(v);
-    document.querySelectorAll(".chip-btn").forEach((b) => b.setAttribute("aria-pressed", String(Math.abs(Number(b.dataset.conf) - v) < 1e-9)));
+    document.querySelectorAll("[data-conf]").forEach((b) => b.setAttribute("aria-pressed", String(Math.abs(Number(b.dataset.conf) - v) < 1e-9)));
+  }
+
+  /** Ajusta somente a escala CSS compartilhada do preview e do PNG; não altera imagem, zona ou inferência. */
+  function setImageScale(value) {
+    const scale = Number(value);
+    if (![50, 75, 100].includes(scale)) return;
+    document.documentElement.dataset.imageScale = String(scale);
+    document.querySelectorAll("button[data-image-scale]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(Number(button.dataset.imageScale) === scale));
+    });
   }
 
   function showError(message) {
@@ -140,12 +167,7 @@ if (typeof document !== "undefined") {
 
   function refreshButtons() {
     const hasImage = !!state.file;
-    const reason = analyzeBlockReason({ hasImage, drawing: state.drawing });
-    el.analyze.disabled = !hasImage || state.busy || state.drawing;
-    el.analyzeReason.textContent = reason || "";
-    el.analyzeReason.hidden = !reason;
-    el.drawToggle.disabled = !hasImage;
-    el.drawUndo.disabled = !hasImage || !state.drawing;
+    el.analyze.disabled = !hasImage || state.busy;
   }
 
   /* --- Selo de frescor do resultado --- */
@@ -154,12 +176,16 @@ if (typeof document !== "undefined") {
   /** Atualiza o selo: compara a chave de agora com a da última análise e mostra "Atualizado" ou "Desatualizado". */
   function refreshFreshness() {
     const f = freshnessOf(currentKey(), state.lastAnalyzedKey);
+    el.result.dataset.freshness = f;
     el.freshness.dataset.state = f;
     el.freshness.hidden = f === "none";
     el.freshnessIcon.textContent = f === "fresh" ? "✓" : f === "stale" ? "▲" : "";
     el.freshnessText.textContent = f === "fresh"
       ? "Atualizado: este resultado corresponde à imagem, à zona e ao limiar atuais."
       : f === "stale" ? "Desatualizado: a imagem, a zona ou o limiar mudaram desde esta análise. Clique em Analisar." : "";
+    el.revealState.textContent = f === "fresh"
+      ? "· resultado atual"
+      : f === "stale" ? "· desatualizado — analise novamente" : "";
   }
 
   /* --- Zona e pré-visualização --- */
@@ -170,8 +196,8 @@ if (typeof document !== "undefined") {
     return parsed;
   }
 
-  /** Redesenha a pré-visualização: a imagem na resolução original e o polígono, com os vértices numerados.
-      Os vértices da zona são normalizados (0 a 1) e viram pixels do canvas; espessuras e fonte acompanham a largura da imagem. */
+  /** Redesenha a pré-visualização: imagem original e área da zona, sem alças ou vértices clicáveis.
+      Os vértices normalizados (0 a 1) viram pixels do canvas; a espessura acompanha a largura da imagem. */
   function drawPreview() {
     const img = state.image;
     if (!img) return;
@@ -192,27 +218,47 @@ if (typeof document !== "undefined") {
     ctx.lineWidth = 3 * scale;
     ctx.strokeStyle = "#d22828";
     ctx.stroke();
-    ctx.font = "bold " + Math.round(14 * scale) + "px sans-serif";
-    pts.forEach((p, i) => {
-      ctx.beginPath();
-      ctx.arc(p[0], p[1], 7 * scale, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-      ctx.lineWidth = 2 * scale;
-      ctx.strokeStyle = "#000532";
-      ctx.stroke();
-      ctx.fillStyle = "#000532";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(String(i + 1), p[0], p[1]);
-    });
-    c.setAttribute("aria-label", "Pré-visualização da imagem enviada, com a zona de risco de " + pts.length + " vértices desenhada em vermelho e numerada");
+    c.setAttribute("aria-label", "Pré-visualização da imagem enviada, com a zona de risco desenhada como uma área de contorno vermelho");
+  }
+
+  function syncZoneControls(zone) {
+    const rect = rectPercentFromZone(zone);
+    if (!rect) return;
+    const values = [[el.zoneLeft, el.zoneLeftOut, rect.left], [el.zoneRight, el.zoneRightOut, rect.right],
+                    [el.zoneTop, el.zoneTopOut, rect.top], [el.zoneBottom, el.zoneBottomOut, rect.bottom]];
+    values.forEach(([input, output, value]) => { input.value = String(value); output.textContent = value + "%"; });
+    el.zoneMargin.value = String(Math.min(20, rect.margin));
+    el.zoneMarginOut.textContent = (Number(el.zoneMargin.value) / 100).toFixed(2).replace(".", ",");
+    el.zoneSliderNote.textContent = rect.isRectangle
+      ? "Os controles representam a zona retangular mostrada no preview."
+      : "A zona atual é um polígono livre. Os controles mostram seu contorno; mover um deles a substituirá por um retângulo.";
   }
 
   function setZone(zone) {
     el.zoneJson.value = zoneToText(zone);
     readZone();
+    syncZoneControls(zone);
     drawPreview();
+  }
+
+  /** Aplica os cinco controles rápidos. Mantém pelo menos 5% de largura e altura. */
+  function applyRectangleControls(changed) {
+    let left = Number(el.zoneLeft.value), right = Number(el.zoneRight.value);
+    let top = Number(el.zoneTop.value), bottom = Number(el.zoneBottom.value);
+    const margin = Number(el.zoneMargin.value);
+    if (right - left < 5) {
+      if (changed === el.zoneLeft) right = Math.min(100, left + 5);
+      else left = Math.max(0, right - 5);
+    }
+    if (bottom - top < 5) {
+      if (changed === el.zoneTop) bottom = Math.min(100, top + 5);
+      else top = Math.max(0, bottom - 5);
+    }
+    const zone = zoneFromRectPercent(left, top, right, bottom, margin);
+    if (!zone) return;
+    setZone(zone);
+    el.status.textContent = "Zona retangular atualizada no preview. Clique em Analisar para executar o modelo.";
+    refreshButtons();
   }
 
   /** Carrega o arquivo escolhido na pré-visualização. A imagem vira uma URL `blob:` local (nada é enviado ainda);
@@ -262,55 +308,17 @@ if (typeof document !== "undefined") {
     const v = currentConf();
     if (Number.isFinite(v) && v >= 0.01 && v <= 0.99) setConf(v);
   });
-  document.querySelectorAll(".chip-btn").forEach((b) => b.addEventListener("click", () => setConf(b.dataset.conf)));
+  document.querySelectorAll("[data-conf]").forEach((b) => b.addEventListener("click", () => setConf(b.dataset.conf)));
+  document.querySelectorAll("button[data-image-scale]").forEach((b) => b.addEventListener("click", () => setImageScale(b.dataset.imageScale)));
 
-  el.zoneJson.addEventListener("input", () => { readZone(); drawPreview(); });
-  el.zoneReset.addEventListener("click", () => { setZone(state.defaultZone || FALLBACK_ZONE); el.status.textContent = "Zona padrão restaurada."; });
-
-  el.drawToggle.addEventListener("click", () => {
-    state.drawing = !state.drawing;
-    el.drawToggle.setAttribute("aria-pressed", String(state.drawing));
-    el.preview.classList.toggle("drawing", state.drawing);
-    if (state.drawing) {
-      // começa um polígono novo, preservando a margem atual
-      const parsed = parseZoneText(el.zoneJson.value);
-      const margin = parsed.zone && parsed.zone.margin !== undefined ? parsed.zone.margin : FALLBACK_ZONE.margin;
-      el.zoneJson.value = zoneToText({ polygon: [], margin }).replace("[\n\n  ]", "[]");
-      el.zoneJson.setAttribute("aria-invalid", "true");
-      el.zoneError.textContent = "Desenhando: clique na pré-visualização para marcar ao menos 3 vértices.";
-      drawPreview();
-      el.status.textContent = "Modo de desenho ativo: cada clique na imagem acrescenta um vértice.";
-    } else {
-      readZone();
-      el.status.textContent = "Modo de desenho encerrado.";
-    }
-    refreshButtons();
-  });
-
-  function currentPolygon() {
-    try { const d = JSON.parse(el.zoneJson.value); return Array.isArray(d.polygon) ? d : null; } catch (e) { return null; }
-  }
-
-  el.preview.addEventListener("click", (ev) => {
-    if (!state.drawing) return;
-    const zone = currentPolygon() || { polygon: [], margin: FALLBACK_ZONE.margin };
-    zone.polygon.push(clickToNormalized(ev.clientX, ev.clientY, el.preview.getBoundingClientRect()));
-    el.zoneJson.value = zoneToText(zone);
+  el.zoneJson.addEventListener("input", () => {
     const parsed = readZone();
-    if (!parsed.error) el.zoneError.textContent = "";
-    else el.zoneError.textContent = "Desenhando: " + zone.polygon.length + " vértice(s); faltam " + Math.max(0, 3 - zone.polygon.length) + " para uma zona válida.";
+    if (parsed.zone) syncZoneControls(parsed.zone);
     drawPreview();
   });
-
-  el.drawUndo.addEventListener("click", () => {
-    const zone = currentPolygon();
-    if (!zone || !zone.polygon.length) return;
-    zone.polygon.pop();
-    el.zoneJson.value = zoneToText(zone);
-    readZone();
-    if (zone.polygon.length < 3) el.zoneError.textContent = "Desenhando: " + zone.polygon.length + " vértice(s); faltam " + (3 - zone.polygon.length) + " para uma zona válida.";
-    drawPreview();
-  });
+  el.zoneReset.addEventListener("click", () => { setZone(state.defaultZone || FALLBACK_ZONE); el.status.textContent = "Zona padrão restaurada."; });
+  [el.zoneLeft, el.zoneRight, el.zoneTop, el.zoneBottom, el.zoneMargin]
+    .forEach((control) => control.addEventListener("input", () => applyRectangleControls(control)));
 
   /* --- Análise --- */
   async function parseBody(response) {
@@ -333,7 +341,6 @@ if (typeof document !== "undefined") {
     if (!Number.isFinite(conf) || conf <= 0 || conf >= 1) { showError("O limiar deve ser um número maior que 0 e menor que 1."); el.number.focus(); return; }
     const parsed = readZone();
     if (parsed.error) { showError("Zona inválida. " + parsed.error); el.zoneJson.focus(); return; }
-    if (state.drawing) { showError("Termine o desenho antes de analisar."); return; }
     const key = analysisKey(state.fileToken, conf, el.zoneJson.value);   // o que ESTA análise usa, capturado antes de esperar
 
     state.busy = true;
@@ -362,7 +369,7 @@ if (typeof document !== "undefined") {
       renderResult(conf, data, blob, analyzedFile.name);
       state.lastAnalyzedKey = key;   // se algo mudou durante a espera, currentKey() != key e o selo mostra "Desatualizado"
       const elapsed = Math.round(performance.now() - started);
-      el.status.textContent = "Análise concluída em " + elapsed + " ms (JSON e imagem), " + summarize(conf, data) + ".";
+      el.status.textContent = "Análise concluída em " + elapsed + " ms (JSON e imagem). Observe o resultado e registre sua hipótese antes de revelar o diagnóstico.";
     } catch (err) {
       const offline = err instanceof TypeError;
       showError(offline ? "Não foi possível falar com o serviço. Confira se o container (ou o uvicorn) está em execução e se esta página foi aberta a partir dele." : err.message);
@@ -376,7 +383,7 @@ if (typeof document !== "undefined") {
   }
   el.analyze.addEventListener("click", analyze);
 
-  /* Qualquer mudança nos controles de entrada (arquivo, limiar, zona, desenho) reavalia o selo e o bloqueio.
+  /* Qualquer mudança nos controles de entrada (arquivo, limiar ou zona) reavalia o selo e o botão.
      Ouvinte no cartão, que roda depois dos tratadores de cada controle (bolha do evento). */
   function syncUi() { refreshButtons(); refreshFreshness(); }
   const entrada = document.getElementById("entrada");
@@ -388,6 +395,9 @@ if (typeof document !== "undefined") {
   function renderResult(conf, data, blob, analyzedFileName) {
     el.resultEmpty.hidden = true;
     el.result.hidden = false;
+    el.diagnosisDetails.open = false;
+    el.technicalDetails.open = false;
+    el.historyWrap.open = false;
     const level = LEVELS[data.risk_level];
     el.banner.dataset.level = data.risk_level;
     el.riskIcon.textContent = level.icon;
@@ -401,7 +411,7 @@ if (typeof document !== "undefined") {
     if (state.annotatedUrl) URL.revokeObjectURL(state.annotatedUrl);
     state.annotatedUrl = URL.createObjectURL(blob);
     el.annotated.src = state.annotatedUrl;
-    el.annotated.alt = "Imagem anotada pelo serviço: " + summarize(conf, data) + ". Zona em vermelho, faixa de atenção em amarelo e caixas rotuladas por nível.";
+    el.annotated.alt = "Imagem anotada pelo serviço, com zona, faixa de atenção e caixas rotuladas por nível. Registre sua hipótese antes de revelar o diagnóstico textual.";
 
     el.personsBody.textContent = "";
     data.persons.forEach((p) => {
@@ -445,6 +455,7 @@ if (typeof document !== "undefined") {
 
   /* --- Inicialização --- */
   async function init() {
+    setImageScale(document.documentElement.dataset.imageScale || 75);
     setConf(0.35);
     try {
       const health = await fetch("/health");

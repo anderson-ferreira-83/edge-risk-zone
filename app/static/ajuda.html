@@ -6,8 +6,8 @@
   <title>Como usar a simulação · Edge Risk Zone</title>
   <meta name="description" content="Guia para estudantes: como usar a demonstração do Edge Risk Zone para escolher uma imagem, definir a zona de risco, ajustar o limiar e interpretar o resultado.">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/static/demo.css">
-  <link rel="stylesheet" href="/static/pages.css">
+  <link rel="stylesheet" href="/static/demo.css?v=20261107-ui4">
+  <link rel="stylesheet" href="/static/pages.css?v=20261107-ui4">
 </head>
 <body>
   <a class="skip-link" href="#conteudo">Ir para o conteúdo principal</a>
@@ -49,13 +49,13 @@
       <li>
         <div>
           <span class="step-title">Escolha uma foto</span>
-          <p>No cartão <strong>1. Entrada</strong>, use <span class="ui">Imagem (JPEG ou PNG)</span> e selecione <code>samples/bomber.jpg</code>. A foto aparece na pré-visualização com a zona de risco pintada de vermelho.</p>
+          <p>No cartão <strong>1. Entrada</strong>, use <span class="ui">Imagem (JPEG ou PNG)</span> e selecione <code>samples/bomber.jpg</code>. A foto aparece na pré-visualização com a zona de risco pintada de vermelho. Em <span class="ui">Tamanho das imagens</span>, escolha 50%, 75% ou 100% para mudar ao mesmo tempo o preview e o resultado; isso altera somente a exibição, não a entrada do modelo.</p>
         </div>
       </li>
       <li>
         <div>
-          <span class="step-title">Olhe a zona de risco</span>
-          <p>A área vermelha é a zona. Os círculos numerados são os <strong>vértices</strong> do polígono. A faixa amarela ao redor da zona (a margem) só aparece na imagem anotada, depois de analisar.</p>
+          <span class="step-title">Ajuste a zona de risco</span>
+          <p>A área vermelha é a zona. Use <span class="ui">Borda esquerda</span>, <span class="ui">Borda direita</span>, <span class="ui">Borda superior</span> e <span class="ui">Borda inferior</span> para formar um retângulo no preview. <span class="ui">Margem amarela</span> ajusta a faixa de atenção, que aparece na imagem anotada depois de analisar.</p>
         </div>
       </li>
       <li>
@@ -67,19 +67,19 @@
       <li>
         <div>
           <span class="step-title">Clique em Analisar</span>
-          <p>O botão <span class="ui">Analisar</span> só fica ativo depois de escolher uma imagem, e <strong>fica bloqueado enquanto o modo de desenho está ligado</strong>: o motivo aparece escrito logo abaixo do botão. A resposta costuma chegar em menos de um segundo.</p>
+          <p>O botão <span class="ui">Analisar</span> fica ao lado dos atalhos de limiar e só é ativado depois de escolher uma imagem. Mover os sliders altera o preview e o JSON; a inferência só acontece quando você usa esse botão.</p>
         </div>
       </li>
       <li>
         <div>
-          <span class="step-title">Leia o resultado</span>
-          <p>No cartão <strong>2. Resultado</strong>, no alto, o selo <strong>Atualizado</strong> ou <strong>Desatualizado</strong> diz se o resultado corresponde à imagem, à zona e ao limiar que estão na tela agora. Abaixo dele: o <strong>risco geral</strong> da cena, os contadores de pessoas por nível, a imagem anotada pelo serviço, a tabela de pessoas (confiança, risco, distância à zona), os tempos de cada etapa e o JSON da resposta.</p>
+          <span class="step-title">Observe antes de revelar</span>
+          <p>No cartão <strong>2. Resultado</strong>, a imagem anotada aparece primeiro. Conte as caixas, interprete suas cores e registre sua hipótese na <strong>ficha de calibração</strong>. Só depois abra <span class="ui">Revelar diagnóstico e contagens</span>. O selo <strong>Atualizado</strong> ou <strong>Desatualizado</strong>, o risco geral e os contadores ficam dentro desse painel.</p>
         </div>
       </li>
       <li>
         <div>
           <span class="step-title">Compare e repita</span>
-          <p>Mude o limiar e analise de novo. A lista <strong>Comparação nesta sessão</strong> guarda cada tentativa (apenas texto, some ao recarregar a página). Compare os números antes de decidir.</p>
+          <p>Se precisar investigar, abra <span class="ui">Revelar tabela, tempos e JSON</span>. Mude o limiar e analise de novo; <span class="ui">Revelar comparação nesta sessão</span> guarda cada tentativa (apenas texto, some ao recarregar). Os três painéis se fecham automaticamente a cada nova análise para não antecipar a resposta.</p>
         </div>
       </li>
     </ol>
@@ -99,19 +99,15 @@
     </div>
     <p>O <strong>risco geral</strong> da cena é o pior nível entre todas as pessoas detectadas.</p>
 
-    <h2 id="desenhar">Como desenhar a sua zona</h2>
+    <h2 id="desenhar">Como ajustar a sua zona</h2>
+    <p>Use os cinco controles de <strong>Ajuste rápido da zona retangular</strong>. Eles alteram somente a geometria enviada à API; não retreinam nem executam o modelo. O preview não recebe cliques.</p>
     <ol>
-      <li>Escolha uma imagem. Depois clique em <span class="ui">Desenhar polígono no preview</span>.</li>
-      <li>Clique na foto, um ponto de cada vez, ao redor da área perigosa. São necessários <strong>pelo menos 3</strong> vértices.</li>
-      <li><strong>Os dois primeiros pontos não aparecem na foto.</strong> A zona só é desenhada, com os vértices numerados, a partir do terceiro clique. Enquanto isso, a mensagem logo abaixo do campo da zona confirma a contagem: "Desenhando: 1 vértice(s); faltam 2 para uma zona válida".</li>
-      <li>Errou? Use <span class="ui">Desfazer vértice</span> para remover o último.</li>
-      <li>Terminou? Clique de novo no botão de desenho para sair do modo e só depois clique em <span class="ui">Analisar</span>. Enquanto o modo estiver ligado, <strong>qualquer clique na foto acrescenta outro vértice</strong> e Analisar fica bloqueado.</li>
+      <li>Mova <span class="ui">Borda esquerda</span> e <span class="ui">Borda direita</span> para ajustar a largura.</li>
+      <li>Mova <span class="ui">Borda superior</span> e <span class="ui">Borda inferior</span> para ajustar a altura.</li>
+      <li>Use <span class="ui">Margem amarela</span> para definir a faixa de atenção.</li>
+      <li>Confira o retângulo no preview e clique em <span class="ui">Analisar</span>.</li>
     </ol>
-    <div class="callout warn">
-      <p class="callout-title">Atenção</p>
-      <p>Ligar o modo de desenho <strong>começa um polígono novo e apaga a zona atual</strong>. Para voltar à zona original, use <span class="ui">Restaurar zona padrão</span>.</p>
-    </div>
-    <p>Quem prefere o teclado pode editar o campo <span class="ui">Zona de risco (JSON com polygon e margin)</span>. As coordenadas são de 0 a 1 (0 é a borda esquerda ou de cima; 1 é a borda direita ou de baixo). O campo <code>margin</code> é a largura da faixa amarela, como fração da diagonal da imagem. Exemplo de uma zona retangular:</p>
+    <p>Se a área perigosa não for retangular, abra <span class="ui">Opção avançada: editar o polígono em JSON</span>. As coordenadas são de 0 a 1 (0 é a borda esquerda ou de cima; 1 é a borda direita ou de baixo). São necessários <strong>pelo menos 3</strong> vértices. O campo <code>margin</code> é a largura da faixa amarela, como fração da diagonal da imagem. Exemplo:</p>
 <pre><code>{
   "polygon": [[0.30, 0.45], [0.98, 0.45], [0.98, 0.98], [0.30, 0.98]],
   "margin": 0.06
@@ -133,7 +129,7 @@
       <caption>Problemas comuns e o que fazer</caption>
       <thead><tr><th scope="col">O que você vê</th><th scope="col">O que fazer</th></tr></thead>
       <tbody>
-        <tr><td>O botão <span class="ui">Analisar</span> está desativado</td><td>Escolha uma imagem JPEG ou PNG primeiro. Se estiver desenhando, clique de novo em <span class="ui">Desenhar polígono no preview</span> para sair do modo; o motivo aparece abaixo do botão.</td></tr>
+        <tr><td>O botão <span class="ui">Analisar</span> está desativado</td><td>Escolha uma imagem JPEG ou PNG primeiro.</td></tr>
         <tr><td>O resultado mostra <strong>Desatualizado</strong></td><td>A imagem, a zona ou o limiar mudaram depois da análise. Clique em <span class="ui">Analisar</span> de novo.</td></tr>
         <tr><td>Mensagem de zona inválida</td><td>O JSON precisa de pelo menos 3 vértices, com valores entre 0 e 1. Use <span class="ui">Restaurar zona padrão</span> e tente de novo.</td></tr>
         <tr><td>"Não foi possível falar com o serviço"</td><td>O container não está rodando ou a página não foi aberta a partir dele. Confira o terminal e abra <code>http://localhost:8000/demo</code>.</td></tr>

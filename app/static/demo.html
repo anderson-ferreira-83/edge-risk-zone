@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-image-scale="75">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Edge Risk Zone · Demonstração local</title>
   <meta name="description" content="Demonstração local do serviço Edge Risk Zone: envie uma imagem, ajuste o limiar e a zona e compare o resultado.">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/static/demo.css">
-  <link rel="stylesheet" href="/static/pages.css">
+  <link rel="stylesheet" href="/static/demo.css?v=20261107-ui4">
+  <link rel="stylesheet" href="/static/pages.css?v=20261107-ui4">
 </head>
 <body>
   <a class="skip-link" href="#entrada">Ir para o conteúdo principal</a>
@@ -39,15 +39,43 @@
         <p id="file-help" class="help">A imagem é enviada apenas ao serviço local desta página e não é gravada. Para a demonstração, use <code>samples/bomber.jpg</code>.</p>
       </div>
 
+      <fieldset class="image-size-controls" aria-describedby="image-size-help">
+        <legend>Tamanho das imagens</legend>
+        <div class="presets">
+          <button type="button" class="chip-btn" data-image-scale="50" aria-pressed="false">50%</button>
+          <button type="button" class="chip-btn" data-image-scale="75" aria-pressed="true">75% (padrão)</button>
+          <button type="button" class="chip-btn" data-image-scale="100" aria-pressed="false">100%</button>
+        </div>
+        <p id="image-size-help" class="help">Aplica-se ao preview e ao resultado; muda somente a exibição, não a imagem enviada ao modelo.</p>
+      </fieldset>
+
       <div class="preview-wrap">
         <p id="preview-empty" class="preview-empty">Nenhuma imagem selecionada.</p>
         <canvas id="preview" class="preview" hidden role="img" aria-label="Pré-visualização da imagem enviada, com a zona de risco desenhada em vermelho"></canvas>
-        <div class="btn-row">
-          <button type="button" id="draw-toggle" class="btn secondary" aria-pressed="false" aria-describedby="draw-help" disabled>Desenhar polígono no preview</button>
-          <button type="button" id="draw-undo" class="btn secondary" disabled>Desfazer vértice</button>
-        </div>
-        <p id="draw-help" class="help">Opcional: com o modo de desenho ativo, cada clique na pré-visualização acrescenta um vértice. Quem prefere o teclado edita o JSON da zona, mais abaixo.</p>
       </div>
+
+      <fieldset class="zone-sliders">
+        <legend>Ajuste rápido da zona retangular</legend>
+        <p class="help zone-sliders-help">Mova as quatro bordas e a margem. O polígono vermelho muda no preview; a inferência só roda ao clicar em <strong>Analisar</strong>.</p>
+        <div class="zone-controls">
+          <label for="zone-left">Borda esquerda <output id="zone-left-out" for="zone-left">30%</output>
+            <input id="zone-left" type="range" min="0" max="95" step="1" value="30">
+          </label>
+          <label for="zone-right">Borda direita <output id="zone-right-out" for="zone-right">98%</output>
+            <input id="zone-right" type="range" min="5" max="100" step="1" value="98">
+          </label>
+          <label for="zone-top">Borda superior <output id="zone-top-out" for="zone-top">45%</output>
+            <input id="zone-top" type="range" min="0" max="95" step="1" value="45">
+          </label>
+          <label for="zone-bottom">Borda inferior <output id="zone-bottom-out" for="zone-bottom">98%</output>
+            <input id="zone-bottom" type="range" min="5" max="100" step="1" value="98">
+          </label>
+          <label for="zone-margin">Margem amarela <output id="zone-margin-out" for="zone-margin">0,06</output>
+            <input id="zone-margin" type="range" min="0" max="20" step="1" value="6">
+          </label>
+        </div>
+        <p id="zone-slider-note" class="help" role="status" aria-live="polite">Os controles representam uma zona retangular.</p>
+      </fieldset>
 
       <div class="field">
         <label for="conf-range">Limiar de confiança: <output id="conf-text" for="conf-range conf-number">0,35</output></label>
@@ -55,29 +83,34 @@
           <input id="conf-range" type="range" min="0.01" max="0.99" step="0.01" value="0.35" aria-describedby="conf-help">
           <input id="conf-number" type="number" min="0.01" max="0.99" step="0.01" value="0.35" inputmode="decimal" aria-label="Valor numérico do limiar de confiança">
         </div>
-        <div class="presets" role="group" aria-label="Valores de limiar usados na aula">
-          <button type="button" class="chip-btn" data-conf="0.50">0,50</button>
-          <button type="button" class="chip-btn" data-conf="0.35">0,35 (padrão)</button>
-          <button type="button" class="chip-btn" data-conf="0.25">0,25</button>
-          <button type="button" class="chip-btn" data-conf="0.10">0,10</button>
+        <div class="threshold-actions">
+          <div class="presets" role="group" aria-label="Valores de limiar usados na aula">
+            <button type="button" class="chip-btn" data-conf="0.50">0,50</button>
+            <button type="button" class="chip-btn" data-conf="0.35">0,35 (padrão)</button>
+            <button type="button" class="chip-btn" data-conf="0.25">0,25</button>
+            <button type="button" class="chip-btn" data-conf="0.10">0,10</button>
+          </div>
+          <button type="button" id="analyze" class="btn primary" disabled>Analisar</button>
         </div>
         <p id="conf-help" class="help">Limiar baixo encontra mais pessoas, mas aumenta alarmes falsos. O serviço aceita valores entre 0 e 1, exclusive.</p>
       </div>
 
-      <div class="field">
-        <label for="zone-json">Zona de risco (JSON com <code>polygon</code> e <code>margin</code>)</label>
-        <textarea id="zone-json" rows="9" spellcheck="false" aria-describedby="zone-help zone-error"></textarea>
-        <p id="zone-help" class="help">Coordenadas normalizadas de 0 a 1 (x, y). <code>margin</code> é a faixa amarela, como fração da diagonal da imagem. Pelo menos 3 vértices.</p>
-        <p id="zone-error" class="field-error" role="alert"></p>
-        <div class="btn-row">
-          <button type="button" id="zone-reset" class="btn secondary">Restaurar zona padrão</button>
+      <details class="advanced-zone">
+        <summary>Opção avançada: editar o polígono em JSON</summary>
+        <div class="advanced-zone-body">
+          <p class="help">O preview não recebe cliques. Para uma zona não retangular, edite os pares <code>[x, y]</code> abaixo; para voltar ao ajuste simples, mova qualquer slider.</p>
+          <div class="field zone-json-field">
+            <label for="zone-json">Zona de risco (JSON com <code>polygon</code> e <code>margin</code>)</label>
+            <textarea id="zone-json" rows="9" spellcheck="false" aria-describedby="zone-help zone-error"></textarea>
+            <p id="zone-help" class="help">Coordenadas normalizadas de 0 a 1 (x, y). <code>margin</code> é a faixa amarela, como fração da diagonal da imagem. Pelo menos 3 vértices.</p>
+            <p id="zone-error" class="field-error" role="alert"></p>
+            <div class="btn-row">
+              <button type="button" id="zone-reset" class="btn secondary">Restaurar zona padrão</button>
+            </div>
+          </div>
         </div>
-      </div>
+      </details>
 
-      <div class="btn-row">
-        <button type="button" id="analyze" class="btn primary" aria-describedby="analyze-reason" disabled>Analisar</button>
-      </div>
-      <p id="analyze-reason" class="help analyze-reason" role="status" aria-live="polite" hidden></p>
       <p id="status" class="status" role="status" aria-live="polite"></p>
       <p id="error" class="error-box" role="alert" hidden></p>
     </section>
@@ -88,53 +121,67 @@
       <div id="result-empty" class="result-empty">Escolha uma imagem e use <strong>Analisar</strong>. O resultado do serviço aparece aqui.</div>
 
       <div id="result" hidden>
-        <p id="freshness" class="freshness" data-state="none" role="status" aria-live="polite" hidden>
-          <span id="freshness-icon" class="freshness-icon" aria-hidden="true"></span>
-          <span id="freshness-text"></span>
-        </p>
-
-        <div id="risk-banner" class="risk-banner" data-level="green">
-          <span id="risk-icon" class="risk-icon" aria-hidden="true">✓</span>
-          <div>
-            <p class="risk-title">Risco geral: <strong id="risk-label">VERDE</strong></p>
-            <p id="risk-message" class="risk-message"></p>
-          </div>
-        </div>
-
-        <dl class="counts">
-          <div><dt>Pessoas</dt><dd id="n-total">0</dd></div>
-          <div class="c-green"><dt>Verde</dt><dd id="n-green">0</dd></div>
-          <div class="c-yellow"><dt>Amarelo</dt><dd id="n-yellow">0</dd></div>
-          <div class="c-red"><dt>Vermelho</dt><dd id="n-red">0</dd></div>
-        </dl>
-
         <figure class="annotated">
           <img id="annotated" alt="" width="640" height="480">
           <figcaption id="annotated-caption">Imagem anotada pelo serviço (<code>POST /detect/image</code>).</figcaption>
         </figure>
 
-        <h3>Pessoas detectadas</h3>
-        <div class="table-wrap">
-          <table id="persons-table">
-            <caption class="sr-only">Pessoas detectadas, com confiança, nível de risco e distância à zona</caption>
-            <thead><tr><th scope="col">#</th><th scope="col">Confiança</th><th scope="col">Risco</th><th scope="col">Distância à zona (px)</th></tr></thead>
-            <tbody id="persons-body"></tbody>
-          </table>
-          <p id="persons-none" class="help" hidden>Nenhuma pessoa detectada com este limiar.</p>
+        <p class="result-instruction"><strong>Antes de revelar:</strong> observe a imagem, conte as caixas e registre sua hipótese na ficha de calibração.</p>
+
+        <details id="diagnosis-details" class="result-details">
+          <summary>Revelar diagnóstico e contagens <span id="reveal-state" class="summary-state"></span></summary>
+          <div class="result-details-body">
+            <p id="freshness" class="freshness" data-state="none" role="status" aria-live="polite" hidden>
+              <span id="freshness-icon" class="freshness-icon" aria-hidden="true"></span>
+              <span id="freshness-text"></span>
+            </p>
+
+            <div id="risk-banner" class="risk-banner" data-level="green">
+              <span id="risk-icon" class="risk-icon" aria-hidden="true">✓</span>
+              <div>
+                <p class="risk-title">Risco geral: <strong id="risk-label">VERDE</strong></p>
+                <p id="risk-message" class="risk-message"></p>
+              </div>
+            </div>
+
+            <dl class="counts">
+              <div><dt>Pessoas</dt><dd id="n-total">0</dd></div>
+              <div class="c-green"><dt>Verde</dt><dd id="n-green">0</dd></div>
+              <div class="c-yellow"><dt>Amarelo</dt><dd id="n-yellow">0</dd></div>
+              <div class="c-red"><dt>Vermelho</dt><dd id="n-red">0</dd></div>
+            </dl>
+          </div>
+        </details>
+
+        <details id="technical-details" class="result-details">
+          <summary>Revelar tabela, tempos e JSON</summary>
+          <div class="result-details-body">
+            <h3>Pessoas detectadas</h3>
+            <div class="table-wrap">
+              <table id="persons-table">
+                <caption class="sr-only">Pessoas detectadas, com confiança, nível de risco e distância à zona</caption>
+                <thead><tr><th scope="col">#</th><th scope="col">Confiança</th><th scope="col">Risco</th><th scope="col">Distância à zona (px)</th></tr></thead>
+                <tbody id="persons-body"></tbody>
+              </table>
+              <p id="persons-none" class="help" hidden>Nenhuma pessoa detectada com este limiar.</p>
+            </div>
+
+            <h3>Tempos (ms, medidos pelo serviço)</h3>
+            <dl id="timings" class="timings"></dl>
+
+            <h3>JSON de <code>POST /detect</code></h3>
+            <pre id="json-out" class="json-out" tabindex="0" aria-label="Resposta JSON formatada do serviço"></pre>
+          </div>
+        </details>
+      </div>
+
+      <details id="history-wrap" class="result-details" hidden>
+        <summary>Revelar comparação nesta sessão</summary>
+        <div class="result-details-body">
+          <p class="help">Somente texto, na memória desta página; some ao recarregar.</p>
+          <ol id="history" class="history"></ol>
         </div>
-
-        <h3>Tempos (ms, medidos pelo serviço)</h3>
-        <dl id="timings" class="timings"></dl>
-
-        <h3>JSON de <code>POST /detect</code></h3>
-        <pre id="json-out" class="json-out" tabindex="0" aria-label="Resposta JSON formatada do serviço"></pre>
-      </div>
-
-      <div id="history-wrap" hidden>
-        <h3>Comparação nesta sessão</h3>
-        <p class="help">Somente texto, na memória desta página; some ao recarregar.</p>
-        <ol id="history" class="history"></ol>
-      </div>
+      </details>
     </section>
   </main>
 
@@ -142,6 +189,6 @@
     <p>Edge Risk Zone · YOLOX-Tiny + ONNX Runtime (CPU). Tudo roda neste computador: a página não usa internet, CDN nem fontes remotas.</p>
   </footer>
 
-  <script src="/static/demo.js"></script>
+  <script src="/static/demo.js?v=20261107-ui4"></script>
 </body>
 </html>

@@ -98,5 +98,4 @@ kbd, .ui { font-weight: 700; background: var(--gray-100); border: 1px solid var(
 .freshness[hidden] { display: none; }
 .freshness[data-state="fresh"] { border-color: var(--risk-green); background: var(--risk-green-bg); color: #14602f; }
 .freshness[data-state="stale"] { border-color: var(--risk-yellow); background: var(--risk-yellow-bg); color: #5c4700; }
-.freshness[data-state="stale"] ~ .annotated img { filter: grayscale(0.7); }
-.analyze-reason { font-weight: 600; color: #5c4700; }
+#result[data-freshness="stale"] .annotated img { filter: grayscale(0.7); }

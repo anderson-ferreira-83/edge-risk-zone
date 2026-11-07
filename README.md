@@ -78,7 +78,8 @@ Frase por frase, com a fonte e o arquivo que sustenta cada linha: [rastreabilida
 Este projeto é a entrega técnica da Parte 1 de um **curso presencial de IA Aplicada**. A demonstração local permite
 que a equipe e os alunos experimentem o pipeline sem alterar código: o [guia de uso](http://localhost:8000/demo/ajuda)
 propõe a atividade de calibração, enquanto o [mapa da Parte 1](http://localhost:8000/demo/pipeline) liga cada exigência
-à implementação e à evidência correspondente.
+à implementação e à evidência correspondente. O seletor 50%/75%/100% muda em conjunto apenas a exibição do preview
+e do resultado, sem alterar a imagem processada ou os parâmetros enviados ao modelo.
 
 ## Execução avançada e configuração
 
@@ -180,7 +181,7 @@ O PNG traz os cabeçalhos `X-Risk-Level`, `X-Persons` e `X-Inference-Ms`.
 
 - **Ao vivo:** `docker compose up --build` e, em seguida, o Swagger em `/docs` e a demonstração em `/demo`. Os dois endpoints obrigatórios são `POST /detect` (JSON) e `POST /detect/image` (PNG anotado).
 - **Registros de execução:** [container amd64 no notebook](docs/evidence/notebook_execution_2026-11-04.md) e [build multi-arquitetura e execução emulada arm64](docs/evidence/multiarch_build.txt).
-- **Testes automáticos:** `pytest` (101) e `node tests/demo_logic.test.mjs` (8); veja [Testes](#testes-estrutura-e-licenças).
+- **Testes automáticos:** `pytest` (103) e `node tests/demo_logic.test.mjs` (8); veja [Testes](#testes-estrutura-e-licenças).
 
 ## Demonstração local (/demo)
 
@@ -188,9 +189,10 @@ Página em HTML, CSS e JavaScript puros, servida pela própria API (`app/static/
 remota ou armazenamento**: funciona dentro do container, sem internet. A resposta usa uma política de segurança
 de conteúdo restrita à própria origem.
 
-- escolha uma imagem JPEG/PNG, ajuste o **limiar** e edite a **zona** em JSON (`polygon` e `margin`, lida de `GET /zone`);
-- opcionalmente, desenhe o polígono por cliques na pré-visualização — o JSON continua sendo a fonte da verdade e a alternativa por teclado;
-- **Analisar** chama `POST /detect` e `POST /detect/image` e mostra risco, contagens, tabela de pessoas, tempos, PNG anotado e JSON, além do histórico textual da sessão;
+- os cartões **1. Entrada** e **2. Resultado** ficam empilhados para dar largura ao preview e à atividade;
+- escolha uma imagem JPEG/PNG, ajuste o **limiar** e mova as bordas e a margem da zona retangular diretamente no preview;
+- opcionalmente, abra a opção avançada para editar o JSON (`polygon` e `margin`, lido de `GET /zone`); o preview não recebe cliques e o JSON continua sendo a fonte da verdade;
+- **Analisar** chama `POST /detect` e `POST /detect/image`: o PNG anotado aparece primeiro, enquanto diagnóstico, contagens, tabela, tempos, JSON e histórico ficam recolhidos até o aluno registrar sua hipótese;
 - erros 400, 413 e 422 do serviço viram mensagens em português; a interface tem navegação por teclado, foco visível e texto junto às cores;
 - `/demo/ajuda` conduz a atividade dos alunos e `/demo/pipeline` confronta os requisitos da Parte 1 com as evidências no repositório.
 
@@ -379,7 +381,7 @@ Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detec
 ## Testes, estrutura e licenças
 
 ```bash
-pip install -r requirements-dev.txt && pytest        # 101 testes; 1 é ignorado se o Node não estiver instalado
+pip install -r requirements-dev.txt && pytest        # 103 testes; 1 é ignorado se o Node não estiver instalado
 node tests/demo_logic.test.mjs                       # 8 testes da lógica JavaScript da demo
 ruff check . && mypy app scripts                     # lint e tipos (configuração em pyproject.toml)
 ```
@@ -391,7 +393,7 @@ config/      zone.json (zona padrão, editável sem reconstruir a imagem)
 models/      yolox_tiny.onnx + origem, checksum e licença
 samples/     fotos de demonstração (domínio público) e créditos
 scripts/     benchmark, build multi-arquitetura, verificação ELF, teste arm64 emulado, download do modelo
-tests/       101 testes (pytest) + 8 testes Node, incluindo detector, API, concorrência e estado da demo
+tests/       103 testes (pytest) + 8 testes Node, incluindo detector, API, concorrência e estado da demo
 docs/        benchmarks, imagens e evidências de execução
 ```
 

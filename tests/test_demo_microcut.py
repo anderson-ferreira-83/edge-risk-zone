@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
 # SPDX-License-Identifier: MIT
-"""Microcorte da /demo: selo de frescor do resultado e bloqueio de Analisar durante o desenho."""
+"""Microcorte da /demo: selo de frescor, sliders e revelação pedagógica do resultado."""
 import re
 import shutil
 import subprocess
@@ -34,15 +34,18 @@ def test_pure_logic_passes_under_node_test():
     assert result.returncode == 0, (result.stdout[-1500:] + result.stderr[-500:])
 
 
-def test_html_has_the_freshness_seal_and_the_block_reason(client):
+def test_html_has_the_freshness_seal_and_no_click_drawing(client):
     html = client.get("/demo").text
     seal = re.search(r'<p id="freshness"[^>]*>', html).group(0)
     assert 'role="status"' in seal and 'aria-live="polite"' in seal and "hidden" in seal   # escondido até a 1ª análise
     assert 'id="freshness-icon"' in html and 'aria-hidden="true"' in html and 'id="freshness-text"' in html
-    reason = re.search(r'<p id="analyze-reason"[^>]*>', html).group(0)
-    assert 'role="status"' in reason and 'aria-live="polite"' in reason and "hidden" in reason
-    assert 'aria-describedby="analyze-reason"' in re.search(r'<button[^>]*id="analyze"[^>]*>', html).group(0)
+    assert 'id="analyze-reason"' not in html and 'aria-describedby="analyze-reason"' not in html
+    assert 'id="draw-toggle"' not in html and 'id="draw-undo"' not in html
+    assert 'id="preview"' in html and 'O preview não recebe cliques.' in html
     assert " style=" not in html                                                         # a CSP bloqueia estilo inline
+    assert html.index('id="annotated"') < html.index('id="freshness"')                  # primeiro observa, depois revela
+    for details_id in ("diagnosis-details", "technical-details", "history-wrap"):
+        assert " open" not in re.search(rf'<details id="{details_id}"[^>]*>', html).group(0)
 
 
 def test_analyze_captures_the_key_before_waiting_and_stores_it_only_on_success():
@@ -71,11 +74,19 @@ def test_file_is_captured_for_request_and_history_when_selection_changes_during_
     assert "function renderResult(conf, data, blob, analyzedFileName)" in render
     assert '" (" + analyzedFileName + ")"' in render
     assert "state.file.name" not in render
+    assert "el.diagnosisDetails.open = false" in render and "el.technicalDetails.open = false" in render
+    assert "el.historyWrap.open = false" in render
 
 
 def test_input_card_resyncs_button_and_seal_after_every_control_handler():
     assert '["input", "change", "click"].forEach((type) => entrada.addEventListener(type, syncUi))' in JS
     assert "function syncUi() { refreshButtons(); refreshFreshness(); }" in JS
+
+
+def test_display_scale_never_enters_the_analysis_key_or_requests():
+    scale = _block(JS, "function setImageScale", "function showError")
+    assert "dataset.imageScale" in scale and "state." not in scale
+    assert "analysisKey" not in scale and "drawPreview" not in scale and "fetch(" not in scale
 
 
 def test_microcut_keeps_the_api_contract_and_the_number_of_requests():

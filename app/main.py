@@ -105,13 +105,16 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.middleware("http")
 async def limit_body_size(request: Request, call_next):
-    """Recusa cedo (413) corpos grandes anunciados no Content-Length, antes de gravá-los em disco."""
+    """Recusa corpos grandes e impede cache obsoleto dos arquivos da demonstração."""
     limit = request.app.state.settings.max_upload_bytes + 64 * 1024  # folga para o multipart
     declared = request.headers.get("content-length", "")
     if declared.isdigit() and int(declared) > limit:
         return JSONResponse({"detail": f"Corpo da requisição maior que {request.app.state.settings.max_upload_mb} MB"},
                             status_code=413)
-    return await call_next(request)
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def _read_image(upload: UploadFile, settings: Settings) -> Image.Image:

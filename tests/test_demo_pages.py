@@ -80,8 +80,10 @@ def test_new_assets_are_offline_and_csp_safe(name):
 def test_student_guide_uses_the_real_button_labels(client):
     """O guia só vale se citar os nomes que a pessoa vê na tela."""
     demo, guide = client.get("/demo").text, client.get("/demo/ajuda").text
-    for label in ("Imagem (JPEG ou PNG)", "Analisar", "Desenhar polígono no preview", "Desfazer vértice",
-                  "Restaurar zona padrão", "Comparação nesta sessão"):
+    for label in ("Imagem (JPEG ou PNG)", "Analisar", "Borda esquerda", "Margem amarela",
+                  "Opção avançada: editar o polígono em JSON", "Restaurar zona padrão",
+                  "Revelar diagnóstico e contagens", "Revelar tabela, tempos e JSON",
+                  "Revelar comparação nesta sessão"):
         assert label in demo, f"rótulo ausente da /demo: {label}"
         assert label in guide, f"rótulo ausente do guia: {label}"
 
@@ -287,37 +289,34 @@ def _block(text, start, end):
     return text[first:text.index(end, first)]
 
 
-def test_guide_drawing_section_matches_the_current_drawing_behavior(client):
-    """Guarda de sincronia: cada afirmação do guia é conferida no trecho certo do demo.js.
-
-    Se este teste falhar porque o comportamento do editor mudou (por exemplo, ao implementar o P0 da
-    proposta de melhoria), atualize a seção "Como desenhar a sua zona" de ajuda.html no mesmo commit.
-    """
+def test_guide_zone_section_matches_slider_only_behavior(client):
+    """Guarda de sincronia: o preview não recebe cliques e os sliders reescrevem polygon + margin."""
     js = (STATIC / "demo.js").read_text(encoding="utf-8")
     guide, demo = client.get("/demo/ajuda").text, client.get("/demo").text
-    toggle = _block(js, 'el.drawToggle.addEventListener("click"', "function currentPolygon")
-    preview = _block(js, "function drawPreview()", "function setZone")
+    preview = _block(js, "function drawPreview()", "function syncZoneControls")
+    assert "ctx.arc(" not in preview and "fillText(" not in preview
     parse = _block(js, "function parseZoneText", "function zoneToText")
 
-    # ligar o desenho recomeça do zero, e o mesmo botão liga e desliga o modo
-    assert "zoneToText({ polygon: [], margin })" in toggle and "apaga a zona atual" in guide
-    assert "state.drawing = !state.drawing" in toggle and "Clique de novo no botão de desenho" in guide
-    # a faixa amarela (margem) não é desenhada na pré-visualização
+    # o preview não recebe cliques; não existe modo de desenho nem cursor de desenho
+    assert 'el.preview.addEventListener("click"' not in js and "drawToggle" not in js and "drawUndo" not in js
+    assert 'id="draw-toggle"' not in demo and 'id="draw-undo"' not in demo
+    assert "O preview não recebe cliques" in guide and "O preview não recebe cliques" in demo
+    # a faixa amarela (margem) só aparece no PNG anotado, não no preview de entrada
     assert "margin" not in preview and "faixa amarela" in guide
     # mínimo de 3 vértices
     assert "polygon.length < 3" in parse and "<strong>pelo menos 3</strong>" in guide
-    # com menos de 3 vértices a pré-visualização não desenha nada: o guia avisa que os dois primeiros não aparecem
-    assert "if (!parsed.zone) return;" in preview and "Os dois primeiros pontos não aparecem" in guide
-    # o modo de desenho continua ligado até o botão ser clicado de novo e, ENQUANTO está ligado, Analisar fica bloqueado
+    # Analisar depende apenas de imagem e estado ocupado
     refresh = _block(js, "function refreshButtons()", "/* --- Selo de frescor")
-    assert "el.analyze.disabled = !hasImage || state.busy || state.drawing" in refresh and "analyzeBlockReason" in refresh
-    assert "if (state.drawing)" in _block(js, "async function analyze()", "state.busy = true")
-    assert "qualquer clique na foto acrescenta outro vértice" in guide and "fica bloqueado" in guide
+    assert "el.analyze.disabled = !hasImage || state.busy" in refresh and "drawing" not in refresh
     # o selo de frescor existe e o guia o descreve
     assert 'id="freshness"' in demo and "Atualizado" in guide and "Desatualizado" in guide
-    # desfazer só vale no modo de desenho
-    assert "el.drawUndo.disabled = !hasImage || !state.drawing" in js
-    assert 'id="draw-undo"' in demo and "Desfazer vértice" in guide
+    # o ajuste rápido preserva a API: só reescreve o mesmo JSON de polygon + margin
+    sliders = _block(js, "function applyRectangleControls", "function loadImage")
+    assert "zoneFromRectPercent" in sliders and "setZone(zone)" in sliders
+    assert "Ajuste rápido da zona retangular" in guide and "alteram somente a geometria enviada à API" in guide
+    # a resposta pedagógica vem depois da imagem e começa escondida em <details>
+    assert demo.index('id="annotated"') < demo.index('id="diagnosis-details"')
+    assert "registre sua hipótese" in guide and "se fecham automaticamente" in guide
 
 
 @pytest.mark.parametrize("path", PAGES)
