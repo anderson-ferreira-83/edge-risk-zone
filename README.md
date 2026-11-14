@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme-header.png" width="1280" alt="FIT — Edge Risk Zone: visão computacional embarcada para zonas de risco">
+  <img src="docs/assets/readme-header.png" width="1280" alt="Edge Risk Zone: visão computacional embarcada para zonas de risco">
 </p>
 
 # Edge Risk Zone
