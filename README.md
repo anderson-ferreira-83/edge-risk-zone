@@ -11,6 +11,7 @@ A inferência é executada exclusivamente em CPU, sem nuvem, em Docker para `lin
 - **Saída:** JSON estruturado ou PNG anotado
 - **Stack:** YOLOX-Tiny · ONNX Runtime · FastAPI · Docker
 - **Origem:** Projeto ID 3 da matriz Edge AI; alvo: Raspberry Pi 5 (execução na placa ainda não verificada)
+- **Contexto:** desenvolvido como desafio técnico durante um processo seletivo conduzido pelo FIT – Instituto de Tecnologia. Projeto independente de candidato; não é um produto oficial do FIT.
 
 > [!IMPORTANT]
 > Protótipo educacional de detecção de **presença**. Não interpreta comportamento e **não substitui** barreiras
@@ -181,7 +182,7 @@ O PNG traz os cabeçalhos `X-Risk-Level`, `X-Persons` e `X-Inference-Ms`.
 
 - **Ao vivo:** `docker compose up --build` e, em seguida, o Swagger em `/docs` e a demonstração em `/demo`. Os dois endpoints obrigatórios são `POST /detect` (JSON) e `POST /detect/image` (PNG anotado).
 - **Registros de execução:** [container amd64 no notebook](docs/evidence/notebook_execution_2026-11-04.md) e [build multi-arquitetura e execução emulada arm64](docs/evidence/multiarch_build.txt).
-- **Testes automáticos:** `pytest` (104) e `node tests/demo_logic.test.mjs` (8); veja [Testes](#testes-estrutura-e-licenças).
+- **Testes automáticos:** `pytest` (102) e `node tests/demo_logic.test.mjs` (8); veja [Testes](#testes-estrutura-e-licenças).
 
 ## Demonstração local (/demo)
 
@@ -195,11 +196,6 @@ de conteúdo restrita à própria origem.
 - **Analisar** chama `POST /detect` e `POST /detect/image`: o PNG anotado aparece primeiro, enquanto diagnóstico, contagens, tabela, tempos, JSON e histórico ficam recolhidos até o aluno registrar sua hipótese;
 - erros 400, 413 e 422 do serviço viram mensagens em português; a interface tem navegação por teclado, foco visível e texto junto às cores;
 - `/demo/ajuda` conduz a atividade dos alunos e `/demo/pipeline` confronta os requisitos da Parte 1 com as evidências no repositório.
-
-O logotipo FIT em `app/static/logo-fit.png` é uma cópia sem alteração do arquivo fornecido para o processo seletivo e
-aparece somente para os fins desta entrega. A marca não integra a licença MIT do projeto; antes de tornar o
-repositório público ou de ampliar o acesso além dos avaliadores, obtenha autorização ou retire o logotipo, o banner e
-sua referência em `demo.html`. Veja [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ## Como funciona
 
@@ -381,19 +377,19 @@ Pela API, em container com 4 CPUs (`docs/benchmark_api_container.json`): `/detec
 ## Testes, estrutura e licenças
 
 ```bash
-pip install -r requirements-dev.txt && pytest        # 104 testes; 1 é ignorado se o Node não estiver instalado
+pip install -r requirements-dev.txt && pytest        # 102 testes; 1 é ignorado se o Node não estiver instalado
 node tests/demo_logic.test.mjs                       # 8 testes da lógica JavaScript da demo
 ruff check . && mypy app scripts                     # lint e tipos (configuração em pyproject.toml)
 ```
 
 ```
 app/         config, geometry (zona), detector (YOLOX + ONNX), risk (regra), render (PNG), schemas, main (FastAPI)
-app/static/  demo, guia dos alunos, mapa da Parte 1, estilos, JavaScript e logotipo (funcionamento offline)
+app/static/  demo, guia dos alunos, mapa da Parte 1, estilos e JavaScript (funcionamento offline)
 config/      zone.json (zona padrão, editável sem reconstruir a imagem)
 models/      yolox_tiny.onnx + origem, checksum e licença
 samples/     fotos de demonstração (domínio público) e créditos
 scripts/     benchmark, build multi-arquitetura, verificação ELF, teste arm64 emulado, download do modelo
-tests/       104 testes (pytest) + 8 testes Node, incluindo detector, API, concorrência e estado da demo
+tests/       102 testes (pytest) + 8 testes Node, incluindo detector, API, concorrência e estado da demo
 docs/        benchmarks, imagens e evidências de execução
 ```
 

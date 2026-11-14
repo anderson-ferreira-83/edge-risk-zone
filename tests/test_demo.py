@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Anderson H. R. Ferreira
 # SPDX-License-Identifier: MIT
 """Testes da página /demo e dos arquivos estáticos (sem navegador)."""
-import hashlib
 import re
 from pathlib import Path
 
@@ -11,7 +10,6 @@ from fastapi.testclient import TestClient
 import app.main as main
 
 STATIC = Path(__file__).resolve().parent.parent / "app" / "static"
-LOGO = Path(__file__).resolve().parent.parent / "app" / "static" / "logo-fit.png"
 
 
 @pytest.fixture(scope="module")
@@ -68,8 +66,7 @@ def test_demo_sets_restrictive_csp_and_no_cache(client):
     assert response.headers["cache-control"] == "no-store"
 
 
-@pytest.mark.parametrize("path,media", [("/static/demo.css", "text/css"), ("/static/demo.js", "javascript"),
-                                        ("/static/logo-fit.png", "image/png")])
+@pytest.mark.parametrize("path,media", [("/static/demo.css", "text/css"), ("/static/demo.js", "javascript")])
 def test_static_files_are_served(client, path, media):
     response = client.get(path)
     assert response.status_code == 200
@@ -124,10 +121,3 @@ def test_demo_calls_only_contract_endpoints():
     called = set(re.findall(r'fetch\("(/[a-z/]+)"', js))
     assert called == {"/detect", "/detect/image", "/health", "/zone"}
 
-
-def test_logo_is_unmodified_png():
-    data = LOGO.read_bytes()
-    assert data.startswith(b"\x89PNG\r\n\x1a\n")
-    # SHA-256 do logo fornecido para a candidatura. Assim o repositório continua
-    # autocontido no GitHub/CI e ainda detecta recorte, recompressão ou recoloração.
-    assert hashlib.sha256(data).hexdigest() == "e5ff80ed8b8f7ab6010202061bb4626ef42adf2b9b7d2b5ebd0ae4a5a77d87f0"

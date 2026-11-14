@@ -8,24 +8,24 @@
 .top-links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; }
 .top-links a {
   color: var(--white); text-decoration: none; font-weight: 700; font-size: 0.95rem;
-  border: 2px solid var(--fit-cyan); border-radius: 999px; padding: 0.3rem 0.95rem;
+  border: 2px solid var(--erz-cyan); border-radius: 999px; padding: 0.3rem 0.95rem;
 }
-.top-links a:hover { background: var(--fit-cyan); color: var(--fit-navy); }
-.top-links a[aria-current="page"] { background: var(--fit-cyan); color: var(--fit-navy); }
+.top-links a:hover { background: var(--erz-cyan); color: var(--erz-navy); }
+.top-links a[aria-current="page"] { background: var(--erz-cyan); color: var(--erz-navy); }
 
 /* Página de documentação */
 .doc { max-width: 1000px; margin: 0 auto; padding: 1.25rem 1.5rem 2.5rem; }
-.doc h1 { font-size: 1.9rem; margin: 0.5rem 0 0.4rem; color: var(--fit-navy); }
-.doc h2 { font-size: 1.35rem; margin: 2rem 0 0.7rem; padding-bottom: 0.3rem; border-bottom: 3px solid var(--fit-cyan); color: var(--fit-navy); }
+.doc h1 { font-size: 1.9rem; margin: 0.5rem 0 0.4rem; color: var(--erz-navy); }
+.doc h2 { font-size: 1.35rem; margin: 2rem 0 0.7rem; padding-bottom: 0.3rem; border-bottom: 3px solid var(--erz-cyan); color: var(--erz-navy); }
 .doc h3 { font-size: 1.1rem; margin: 1.2rem 0 0.4rem; }
 .doc p, .doc li { max-width: 78ch; }
 .lead { font-size: 1.1rem; color: var(--gray-600); margin: 0 0 1rem; }
 .back-link { display: inline-block; margin: 0.4rem 0 0; color: var(--cyan-text); font-weight: 700; }
-.doc pre { background: var(--fit-navy); color: #e6f4ff; padding: 0.9rem 1rem; border-radius: 8px; overflow: auto; font-size: 0.88rem; line-height: 1.45; }
+.doc pre { background: var(--erz-navy); color: #e6f4ff; padding: 0.9rem 1rem; border-radius: 8px; overflow: auto; font-size: 0.88rem; line-height: 1.45; }
 .doc pre code { background: none; padding: 0; color: inherit; }
 kbd, .ui { font-weight: 700; background: var(--gray-100); border: 1px solid var(--gray-300); border-radius: 5px; padding: 0.05rem 0.4rem; white-space: nowrap; }
 
-.callout { margin: 1rem 0; padding: 0.8rem 1rem; border-left: 6px solid var(--fit-cyan); background: #e8f5fc; border-radius: 6px; }
+.callout { margin: 1rem 0; padding: 0.8rem 1rem; border-left: 6px solid var(--erz-cyan); background: #e8f5fc; border-radius: 6px; }
 .callout.warn { border-left-color: var(--risk-yellow); background: var(--risk-yellow-bg); }
 .callout.stop { border-left-color: var(--risk-red); background: var(--risk-red-bg); }
 .callout p { margin: 0.2rem 0; }
@@ -35,8 +35,8 @@ kbd, .ui { font-weight: 700; background: var(--gray-100); border: 1px solid var(
 .steps { list-style: none; counter-reset: step; margin: 0.5rem 0 0; padding: 0; }
 .steps > li { counter-increment: step; display: grid; grid-template-columns: 3rem 1fr; gap: 0.9rem; margin: 0 0 0.9rem; padding: 0.85rem 1rem; background: var(--white); border: 1px solid var(--gray-300); border-radius: 10px; }
 .steps > li::before {
-  content: counter(step); width: 2.6rem; height: 2.6rem; border-radius: 50%; background: var(--fit-navy); color: var(--white);
-  display: grid; place-items: center; font-size: 1.25rem; font-weight: 800; border-bottom: 4px solid var(--fit-cyan);
+  content: counter(step); width: 2.6rem; height: 2.6rem; border-radius: 50%; background: var(--erz-navy); color: var(--white);
+  display: grid; place-items: center; font-size: 1.25rem; font-weight: 800; border-bottom: 4px solid var(--erz-cyan);
 }
 .steps > li { max-width: none; }
 .steps .step-title { display: block; font-weight: 800; font-size: 1.08rem; margin-bottom: 0.15rem; }
@@ -65,8 +65,8 @@ kbd, .ui { font-weight: 700; background: var(--gray-100); border: 1px solid var(
 
 /* Diagrama do pipeline de inferência */
 .flow { list-style: none; margin: 0.8rem 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1.4rem 1.1rem; counter-reset: etapa; }
-.flow > li { position: relative; background: var(--white); border: 2px solid var(--fit-navy); border-top: 6px solid var(--fit-cyan); border-radius: 8px; padding: 0.6rem 0.65rem 0.7rem; }
-.flow > li:not(:last-child)::after { content: "→"; content: "→" / ""; position: absolute; right: -1.05rem; top: 50%; transform: translateY(-50%); font-size: 1.4rem; font-weight: 800; color: var(--fit-navy); }
+.flow > li { position: relative; background: var(--white); border: 2px solid var(--erz-navy); border-top: 6px solid var(--erz-cyan); border-radius: 8px; padding: 0.6rem 0.65rem 0.7rem; }
+.flow > li:not(:last-child)::after { content: "→"; content: "→" / ""; position: absolute; right: -1.05rem; top: 50%; transform: translateY(-50%); font-size: 1.4rem; font-weight: 800; color: var(--erz-navy); }
 .flow strong { display: block; font-size: 1rem; line-height: 1.2; margin-bottom: 0.25rem; }
 .flow .detail { display: block; font-size: 0.85rem; color: var(--gray-600); }
 .flow .time { display: block; margin-top: 0.4rem; font-weight: 800; font-size: 0.9rem; color: var(--cyan-text); }
@@ -76,14 +76,14 @@ kbd, .ui { font-weight: 700; background: var(--gray-100); border: 1px solid var(
 }
 
 /* Linha do tempo do desenvolvimento */
-.timeline { list-style: none; margin: 0.6rem 0; padding: 0 0 0 1.4rem; border-left: 4px solid var(--fit-cyan); }
+.timeline { list-style: none; margin: 0.6rem 0; padding: 0 0 0 1.4rem; border-left: 4px solid var(--erz-cyan); }
 .timeline > li { position: relative; margin: 0 0 0.9rem; padding-left: 0.4rem; }
-.timeline > li::before { content: ""; position: absolute; left: -2.02rem; top: 0.35rem; width: 0.9rem; height: 0.9rem; background: var(--fit-navy); border: 3px solid var(--white); border-radius: 50%; box-shadow: 0 0 0 2px var(--fit-cyan); }
+.timeline > li::before { content: ""; position: absolute; left: -2.02rem; top: 0.35rem; width: 0.9rem; height: 0.9rem; background: var(--erz-navy); border: 3px solid var(--white); border-radius: 50%; box-shadow: 0 0 0 2px var(--erz-cyan); }
 .timeline .tl-title { font-weight: 800; }
 .timeline p { margin: 0.1rem 0; }
 
 .link-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.8rem 0; }
-.link-row a { font-weight: 700; color: var(--fit-navy); border: 2px solid var(--fit-navy); border-radius: 8px; padding: 0.45rem 1rem; text-decoration: none; background: var(--white); }
+.link-row a { font-weight: 700; color: var(--erz-navy); border: 2px solid var(--erz-navy); border-radius: 8px; padding: 0.45rem 1rem; text-decoration: none; background: var(--white); }
 .link-row a:hover { background: var(--gray-100); }
 
 @media print {
